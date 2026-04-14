@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>MarkedUp</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" rel="stylesheet">
+
+    <script>
+        // Ensure trailing slash for correct relative path resolution
+        if (!window.location.pathname.endsWith('/') && !window.location.pathname.endsWith('.html')) {
+            window.location.replace(window.location.pathname + '/' + window.location.search + window.location.hash);
+        }
+    </script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://code.iconify.design/3/3.1.1/iconify.min.js"></script>
+
+    <link rel="stylesheet" href="css/styles.css?v=1.2">
+</head>
+<body>
+
+<a class="skip-link" href="#mainViewport">Skip to main content</a>
+
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<div class="app">
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-grabber"></div>
+        <div class="sidebar-content">
+            <div class="sidebar-header">
+                <button class="sidebar-close-btn" id="sidebarCloseBtn" style="display:none;">×</button>
+                <div class="logo">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+                        <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
+                        <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
+                    </svg>
+                </div>
+                <span class="logo-text">MarkedUp</span>
+                <div class="header-actions">
+                    <button class="settings-btn" id="settingsBtn" title="Settings" aria-label="Open settings">⚙️</button>
+                </div>
+            </div>
+
+            <div class="search-box" style="padding: 12px; border-bottom: 1px solid var(--border); background: var(--bg-panel);">
+                <label class="sr-only" for="searchInput">Search library and assets</label>
+                <input type="text" class="search-input" id="searchInput" placeholder="Search...">
+            </div>
+
+            <div class="tabs" id="tabsContainer"></div>
+
+            <div class="library-breadcrumbs" id="libraryBreadcrumbs" style="display:none;"></div>
+            
+            <div id="libraryToolbar" style="padding: 12px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+                <div class="view-toggles" style="display: flex; background: var(--bg-surface); border-radius: 8px; padding: 2px;">
+                    <button class="btn-icon active" id="viewGridBtn" title="Grid View">⊞</button>
+                    <button class="btn-icon" id="viewListBtn" title="List View">≡</button>
+                </div>
+                <select id="librarySort" class="btn btn-ghost btn-sm" style="font-size: 11px;">
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                    <option value="name">By Name</option>
+                </select>
+                <button class="btn btn-ghost btn-sm" id="newCollectionBtn" title="Create Collection">＋📁</button>
+            </div>
+            
+            <div class="api-status" id="apiStatus" style="display:none;">
+                <span class="status-dot"></span>
+                <span class="status-text">API Status</span>
+                <span class="provider-badge" id="providerBadge"></span>
+            </div>
+            
+            <div class="category-chips" id="categoryChips" style="display:none;"></div>
+            <div class="category-chips" id="stockProviders" style="display:none;">
+                <div class="chip active" data-provider="picsum">Picsum</div>
+                <div class="chip" data-provider="unsplash">Unsplash</div>
+                <div class="chip" data-provider="pexels">Pexels</div>
+            </div>
+            
+            <div class="content-area" id="contentArea">
+                <div class="grid grid-sessions" id="capturesGrid"></div>
+                <div class="grid grid-tools" id="toolsGrid" style="display:none;"></div>
+                <div class="grid grid-icons" id="iconsGrid" style="display:none;"></div>
+                <div class="grid grid-emojis" id="emojisGrid" style="display:none;"></div>
+                <div class="grid grid-images" id="stockGrid" style="display:none;"></div>
+                <div class="grid grid-sessions" id="favoritesGrid" style="display:none;"></div>
+            </div>
+            
+            <div class="actions-bar" id="actionsBar">
+                <button class="btn btn-primary" id="exportBtn">Export Selected</button>
+                <div style="display:flex; gap:var(--space-sm);">
+                    <button class="btn btn-default btn-sm" style="flex:1" id="selectAllBtn">Select All</button>
+                    <button class="btn btn-danger btn-sm" id="clearAllBtn">Clear All</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="main">
+        <div class="header">
+            <div class="header-mobile-top hidden-desktop">
+                <button class="sidebar-toggle-btn" id="mobileMenuBtn" title="Toggle Library" aria-label="Open library sidebar">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                </button>
+                <div class="logo" style="width:26px; height:26px;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+                        <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
+                        <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
+                    </svg>
+                </div>
+
+                <div id="mobileHeaderControls">
+                    <div id="mobHeaderBrowse" style="display:flex; width:100%; gap:8px; align-items:center;">
+                        <label class="sr-only" for="urlInputMob">Website URL</label>
+                        <input type="text" class="url-input" id="urlInputMob" placeholder="Enter URL..." value="https://wikipedia.org">
+                        <button class="btn btn-default" id="goBtnMob">Go</button>
+                        <button class="btn btn-success" id="captureBtnMobHeader" aria-label="Capture page">📷</button>
+                    </div>
+                    <div id="mobHeaderMarkup" style="display:none; width:100%; gap:6px; justify-content:center;">
+                        <button class="tool-btn" id="undoBtnMobHeader" aria-label="Undo"><span class="iconify" data-icon="mdi:undo-variant"></span></button>
+                        <button class="tool-btn" id="redoBtnMobHeader" aria-label="Redo"><span class="iconify" data-icon="mdi:redo-variant"></span></button>
+                        <button class="tool-btn" id="zoomOutMobHeader" aria-label="Zoom out"><span class="iconify" data-icon="mdi:magnify-minus-outline"></span></button>
+                        <button class="tool-btn" id="zoomFitMobHeader" aria-label="Fit to view"><span class="iconify" data-icon="mdi:fit-to-page-outline"></span></button>
+                        <button class="tool-btn" id="zoomInMobHeader" aria-label="Zoom in"><span class="iconify" data-icon="mdi:magnify-plus-outline"></span></button>
+                        <button class="tool-btn" id="tool-select-mob-h" data-tool="select" aria-label="Select tool"><span class="iconify" data-icon="mdi:cursor-default-outline"></span></button>
+                        <button class="tool-btn" id="tool-hand-mob-h" data-tool="hand" aria-label="Hand tool"><span class="iconify" data-icon="mdi:hand-back-right-outline"></span></button>
+                    </div>
+                </div>
+
+                <button class="settings-btn" aria-label="Open settings" onclick="document.getElementById('settingsBtn').click()">⚙️</button>
+            </div>
+
+            <div class="view-switch hidden-mobile">
+                <button class="view-btn" id="btnLibrary"><span class="iconify" data-icon="mdi:bookshelf"></span><span>Library</span></button>
+                <button class="view-btn active" id="btnBrowse"><span class="iconify" data-icon="mdi:web"></span><span>Browse</span></button>
+                <button class="view-btn" id="btnMarkup"><span class="iconify" data-icon="mdi:draw-pen"></span><span>Markup</span></button>
+            </div>
+            
+            <div class="header-center hidden-mobile">
+                <div class="url-bar" id="browserBar">
+                    <div class="browse-input-cluster">
+                        <span class="iconify browse-inline-icon" data-icon="mdi:web"></span>
+                        <label class="sr-only" for="urlInput">Website URL</label>
+                        <input type="text" class="url-input" id="urlInput" value="https://wikipedia.org" placeholder="Enter URL...">
+                        <button class="btn btn-default browse-action-btn" id="goBtn"><span class="iconify" data-icon="mdi:arrow-right"></span><span class="browse-btn-label">Go</span></button>
+                    </div>
+
+                    <div class="browse-meta-cluster">
+                        <div class="viewport-selector">
+                            <span class="iconify" data-icon="mdi:monitor-dashboard"></span>
+                            <select id="viewportSelect">
+                                <option value="desktop">Desktop</option>
+                                <option value="tablet">Tablet</option>
+                                <option value="mobile">Mobile</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-default browse-action-btn" id="pdfOpenBtn" title="Open PDF"><span class="iconify" data-icon="mdi:file-pdf-box"></span><span class="browse-btn-label">PDF</span></button>
+                        <button class="btn btn-default browse-action-btn" id="pasteCaptureBtn" title="Paste Image"><span class="iconify" data-icon="mdi:clipboard-outline"></span><span class="browse-btn-label">Paste</span></button>
+                        <button class="btn btn-success browse-action-btn" id="captureBtn"><span class="iconify" data-icon="mdi:camera-outline"></span><span class="browse-btn-label">Capture</span></button>
+                    </div>
+                </div>
+
+                <div class="markup-bar" id="markupBar" style="display:none;">
+                    <div class="tool-group">
+                        <button class="tool-btn" id="tool-hand-desk" data-tool="hand" title="Hand Tool (H)"><span class="iconify" data-icon="mdi:hand-back-right-outline"></span></button>
+                        <button class="tool-btn" id="tool-select-desk" data-tool="select" title="Select Tool (V)"><span class="iconify" data-icon="mdi:cursor-default-outline"></span></button>
+                    </div>
+                    <div class="tool-group">
+                        <button class="tool-btn" id="zoomOutDesk" title="Zoom Out (−)"><span class="iconify" data-icon="mdi:magnify-minus-outline"></span></button>
+                        <span class="zoom-level" id="zoomLevelDesk">100%</span>
+                        <button class="tool-btn" id="zoomInDesk" title="Zoom In (+)"><span class="iconify" data-icon="mdi:magnify-plus-outline"></span></button>
+                        <button class="tool-btn" id="zoomFitDesk" title="Fit to View (⊡)"><span class="iconify" data-icon="mdi:fit-to-page-outline"></span></button>
+                    </div>
+                    <div class="tool-group">
+                        <button class="tool-btn" id="undoBtnDesk" title="Undo (Ctrl+Z)"><span class="iconify" data-icon="mdi:undo-variant"></span></button>
+                        <button class="tool-btn" id="redoBtnDesk" title="Redo (Ctrl+Y)"><span class="iconify" data-icon="mdi:redo-variant"></span></button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="header-right hidden-mobile">
+                <div class="editor-bar" id="editorBar">
+                    <div class="tool-group" id="toolGroup"></div>
+                    <div class="tool-group">
+                        <div class="color-well" title="Stroke Color"><input type="color" id="strokeColor" value="#ef4444"></div>
+                        <div class="dropdown">
+                            <button class="tool-btn" id="editorMoreBtn"><span class="iconify" data-icon="mdi:dots-horizontal"></span></button>
+                            <div class="dropdown-menu" id="editorMoreMenu">
+                                <div class="dropdown-item">
+                                    <span>Stroke Width</span>
+                                    <input type="range" class="stroke-slider" id="strokeSlider" min="1" max="20" value="4">
+                                </div>
+                                <div class="dropdown-item">
+                                    <span>Fill Color</span>
+                                    <div class="color-well"><input type="color" id="fillColor" value="#ffffff"></div>
+                                </div>
+                                <div class="dropdown-item" id="textStyleControls">
+                                    <span>Text Size <strong id="textSizeValue" style="float:right; color:var(--text);">24px</strong></span>
+                                    <input type="range" class="stroke-slider" id="textSizeSlider" min="10" max="96" value="24">
+                                </div>
+                                <div class="dropdown-item" id="textFaceControls">
+                                    <span>Text Style</span>
+                                    <div style="display:flex; gap:8px;">
+                                        <select id="textWeightSelect" style="flex:1;">
+                                            <option value="400">Regular</option>
+                                            <option value="500">Medium</option>
+                                            <option value="700">Bold</option>
+                                        </select>
+                                        <select id="textFontSelect" style="flex:1;">
+                                            <option value="Inter, sans-serif">Inter</option>
+                                            <option value="Georgia, serif">Serif</option>
+                                            <option value="'JetBrains Mono', monospace">Mono</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="dropdown-item" id="sizeControls">
+                                    <span>Icon/Point Size <strong id="sizeValue" style="float:right; color:var(--text);">48px</strong></span>
+                                    <input type="range" class="stroke-slider" id="sizeSlider" min="12" max="200" value="48">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tool-group toolbar-actions-inline">
+                        <button class="btn btn-ghost btn-sm toolbar-action" id="layersBtn"><span class="action-emoji">📑</span><span class="action-label">Layers</span></button>
+                        <button class="btn btn-success btn-sm toolbar-action" id="saveBtn"><span class="action-emoji">💾</span><span class="action-label">Save</span></button>
+                        <button class="btn btn-danger btn-sm toolbar-action" id="deleteBtn"><span class="action-emoji">🗑️</span><span class="action-label">Delete</span></button>
+                    </div>
+                </div>
+                
+                <div class="session-actions" id="sessionActions">
+                    <button class="btn btn-primary btn-sm" id="startNewBtn">＋ New</button>
+                    <select id="sessionSwitcher" class="btn btn-default btn-sm"></select>
+                </div>
+            </div>
+        </div>
+        
+        <div class="viewport" id="mainViewport" role="main">
+            <div class="view-layer active" id="browseView">
+                <iframe id="webFrame"></iframe>
+            </div>
+            
+            <div class="view-layer" id="markupView">
+                <div id="canvas-container">
+                    <canvas id="mainCanvas"></canvas>
+                    <textarea id="textEditOverlay" spellcheck="false"></textarea>
+                </div>
+                <div class="empty-state" id="emptyState">
+                    <h3>No Canvas Active</h3>
+                    <p>Capture a webpage or select a capture from the library.</p>
+                </div>
+                
+                <div class="layers-panel" id="layersPanel">
+                    <button class="panel-close-btn" aria-label="Close layers panel" onclick="document.getElementById('layersPanel').classList.remove('open')">×</button>
+                    <div class="layers-header">
+                        <span>Layers</span>
+                        <span id="layerCount">0</span>
+                    </div>
+                    <div class="layers-list" id="layersList"></div>
+                </div>
+
+                <div class="history-panel" id="historyPanel">
+                    <button class="panel-close-btn" aria-label="Close history panel" onclick="document.getElementById('historyPanel').classList.remove('open')">×</button>
+                    <div class="history-header">
+                        <span>History</span>
+                        <span id="historyStepCount">0</span>
+                    </div>
+                    <div class="history-list" id="historyList"></div>
+                </div>
+
+                <div class="notes-panel" id="notesPanel">
+                    <button class="panel-close-btn" id="closeNotesBtn" aria-label="Close notes panel">×</button>
+                    <div class="notes-header">
+                        <span>Notes</span>
+                    </div>
+                    <div class="notes-list" id="notesList"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Consolidated Bottom Tray for Mobile -->
+        <div class="tray-overlay hidden-desktop" id="trayOverlay"></div>
+        <div class="bottom-tray hidden-desktop" id="mobileActionTray">
+            <div class="tray-handle"></div>
+            <div class="tray-content">
+                <div class="tray-section">
+                    <span class="tray-label">Drawing Tools</span>
+                    <div class="tool-grid">
+                        <button class="tray-tool-btn" data-tool="rect"><span class="iconify" data-icon="mdi:rectangle-outline"></span><span>Rect</span></button>
+                        <button class="tray-tool-btn" data-tool="circle"><span class="iconify" data-icon="mdi:circle-outline"></span><span>Circle</span></button>
+                        <button class="tray-tool-btn" data-tool="arrow"><span class="iconify" data-icon="mdi:arrow-top-right-thick"></span><span>Arrow</span></button>
+                        <button class="tray-tool-btn" data-tool="path"><span class="iconify" data-icon="mdi:pencil-outline"></span><span>Pencil</span></button>
+                        <button class="tray-tool-btn" data-tool="text"><span class="iconify" data-icon="mdi:format-text"></span><span>Text</span></button>
+                        <button class="tray-tool-btn" data-tool="point"><span class="iconify" data-icon="mdi:map-marker-outline"></span><span>Point</span></button>
+                        <button class="tray-tool-btn" data-tool="eraser"><span class="iconify" data-icon="mdi:eraser-variant"></span><span>Eraser</span></button>
+                        <button class="tray-tool-btn" id="assetsBtnTray"><span class="iconify" data-icon="mdi:folder-image"></span><span>Assets</span></button>
+                    </div>
+                </div>
+
+                <div class="tray-section">
+                    <span class="tray-label">Style & Appearance</span>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; align-items:center;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <div class="color-well" style="width:40px; height:40px; border-radius:10px;">
+                                <input type="color" id="strokeColorMob" value="#ef4444">
+                            </div>
+                            <span style="font-size:10px; font-weight:700; color:var(--text-dim);">STROKE</span>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <div class="color-well" style="width:40px; height:40px; border-radius:10px;">
+                                <input type="color" id="fillColorMob" value="#ffffff">
+                            </div>
+                            <span style="font-size:10px; font-weight:700; color:var(--text-dim);">FILL</span>
+                        </div>
+                    </div>
+                    <div style="margin-top:16px;">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                            <span style="font-size:11px; font-weight:700; color:var(--text-dim);">STROKE WIDTH</span>
+                            <span id="strokeValMob" style="font-size:11px; font-weight:700; color:var(--accent);">4px</span>
+                        </div>
+                        <input type="range" class="stroke-slider" id="strokeSliderMob" min="1" max="20" value="4">
+                    </div>
+                </div>
+
+                <div class="tray-section" style="border:none;">
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                        <button class="btn btn-default" id="layersBtnMobTray">📑 Layers</button>
+                        <button class="btn btn-default" id="historyBtnMobTray">📜 History</button>
+                        <button class="btn btn-success" id="saveBtnMobTray">💾 Save</button>
+                        <button class="btn btn-danger" id="deleteBtnMobTray">🗑️ Delete</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Single Floating Trigger Button -->
+        <button class="floating-trigger hidden-desktop" id="mobileDrawingTrigger">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 19l7-7 3 3-7 7-3-3z"></path><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path></svg>
+        </button>
+    </div>
+    </div>
+
+    <div class="mobile-nav" id="mobileNav" style="display:none;">
+        <div class="nav-item" id="navLibrary" role="button" tabindex="0" aria-label="Switch to Library view">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+            <span>Library</span>
+        </div>
+        <div class="nav-item" id="navBrowse" role="button" tabindex="0" aria-label="Switch to Browse view">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+            <span>Browse</span>
+        </div>
+        <div class="nav-item active" id="navMarkup" role="button" tabindex="0" aria-label="Switch to Markup view">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l7-7 3 3-7 7-3-3z"></path><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path></svg>
+            <span>Markup</span>
+        </div>
+        <div class="nav-item" id="navAssets" role="button" tabindex="0" aria-label="Open Assets">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+            <span>Assets</span>
+        </div>
+    </div>
+</div>
+
+<!-- Landing Page -->
+<div class="landing-page" id="landingPage">
+    <div class="landing-header">
+        <div class="landing-title-group">
+            <div class="logo" style="width:48px; height:48px;">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+                    <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
+                    <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
+                </svg>
+            </div>
+            <div>
+                <h1>MarkedUp</h1>
+                <p>Web Annotation &amp; Documentation Workspace</p>
+            </div>
+        </div>
+        <div style="display:flex; gap:var(--space-md);">
+            <button class="btn btn-default" id="landingExportBtn">Bulk Export</button>
+            <button class="btn btn-primary" id="landingNewBtn">︋ New Collection</button>
+        </div>
+    </div>
+    <div class="landing-hero-bar"></div>
+    
+    <div class="landing-content">
+        <h2 class="landing-section-header">
+            <span>Collections & Folders</span>
+            <span>(Select items for bulk export)</span>
+        </h2>
+        
+        <div class="sessions-grid" id="landingSessionsGrid"></div>
+    </div>
+</div>
+
+<!-- Settings Modal -->
+<div class="modal-overlay" id="settingsModal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <div class="modal settings-modal" tabindex="-1">
+        <button class="panel-close-btn static" style="position:absolute; top:12px; right:12px; z-index:100;" aria-label="Close settings" onclick="Modal.close('settingsModal')">×</button>
+        <div class="settings-sidebar">
+            <div class="settings-header-title" id="settingsTitle">⚙️ Settings</div>
+            <div class="settings-nav" id="settingsNav">
+                <div class="settings-nav-item active" data-target="settings-general">General & Editor</div>
+                <div class="settings-nav-item" data-target="settings-assets">Assets & Integrations</div>
+                <div class="settings-nav-item" data-target="settings-data">Data & Storage</div>
+            </div>
+        </div>
+        
+        <div class="settings-content-area">
+            <div class="settings-content">
+                
+                <!-- General & Editor Section -->
+                <div class="settings-section active" id="settings-general">
+                    <h3 class="settings-section-title">Editor Behavior</h3>
+                    
+                    <div class="toggle-row">
+                        <div>
+                            <div class="toggle-label">Default to Select Tool</div>
+                            <div class="toggle-desc">Switch back to the Select tool automatically after drawing a shape.</div>
+                        </div>
+                        <div class="toggle active" id="toggleDefaultToSelect"></div>
+                    </div>
+
+                    <div class="toggle-row">
+                        <div>
+                            <div class="toggle-label">Right-click to Pan</div>
+                            <div class="toggle-desc">Hold the right mouse button to move the canvas around.</div>
+                        </div>
+                        <div class="toggle active" id="toggleRightClickPan"></div>
+                    </div>
+                    
+                    <div class="form-group" style="margin-top: 24px;">
+                        <label>Default Stroke Color</label>
+                        <div class="color-picker-group">
+                            <input type="color" id="settingDefaultStrokeColor" value="#ef4444">
+                            <input type="text" id="settingDefaultStrokeColorHex" value="#ef4444" spellcheck="false" style="text-transform: uppercase;">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Default Stroke Width: <span id="settingStrokeWidthDisplay">4px</span></label>
+                        <input type="range" id="settingDefaultStrokeWidth" min="1" max="20" value="4" style="width:100%; accent-color:var(--accent);">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Pinch Zoom Sensitivity: <span id="settingPinchSensitivityDisplay">1.0x</span></label>
+                        <input type="range" id="settingPinchSensitivity" min="0.1" max="5.0" step="0.1" value="1.0" style="width:100%; accent-color:var(--accent);">
+                    </div>
+
+                    <div class="form-group" style="margin-top: 24px;">
+                        <label>Mobile Toolbar Position</label>
+                        <select id="settingMobileToolbarPosition">
+                            <option value="bottom">Bottom Bar (Default)</option>
+                            <option value="top">Top Bar</option>
+                            <option value="floating">Floating Button</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 24px;">
+                        <label>Editor Toolbar Position (Desktop)</label>
+                        <select id="settingEditorToolbarPosition">
+                            <option value="floating">🎈 Floating (Default)</option>
+                            <option value="top-docked">📌 Top Docked</option>
+                            <option value="bottom-docked">📌 Bottom Docked</option>
+                            <option value="left-docked">📌 Left Docked</option>
+                            <option value="right-docked">📌 Right Docked</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 24px;">
+                        <label>Default Startup View</label>
+                        <select id="settingDefaultView">
+                            <option value="library">📂 Library (Home)</option>
+                            <option value="browse">🌐 Browse</option>
+                            <option value="markup">🎨 Markup (Canvas)</option>
+                        </select>
+                    </div>
+
+                    <h3 class="settings-section-title" style="margin-top:32px;">Local Capture Engine</h3>
+                    <div class="form-group" style="margin-top: 16px;">
+                        <label>Capture Mode</label>
+                        <select id="settingCaptureMode">
+                            <option value="auto">Auto (Live first, fallback to Node)</option>
+                            <option value="live">Live iframe state only (html2canvas)</option>
+                            <option value="node">Node replay only (Playwright)</option>
+                            <option value="trueview">True View (tab capture, exact visible pixels)</option>
+                        </select>
+                    </div>
+                    <p style="font-size: 12px; color: var(--text-dim); margin-bottom: 12px;">
+                        Live mode captures iframe DOM state, Node mode replays in Playwright, and True View captures exact visible tab pixels (one picker approval per sharing session).
+                    </p>
+                </div>
+
+                <!-- Assets & Integrations Section -->
+                <div class="settings-section" id="settings-assets">
+                    <h3 class="settings-section-title">Icon Providers</h3>
+                    
+                    <div class="toggle-row">
+                        <div>
+                            <div class="toggle-label">Built-in Icons</div>
+                            <div class="toggle-desc">Use bundled Feather icons (works offline, no API needed).</div>
+                        </div>
+                        <div class="toggle active" id="toggleBuiltinIcons"></div>
+                    </div>
+                    
+                    <div class="toggle-row" style="border-bottom: none;">
+                        <div>
+                            <div class="toggle-label">Iconify API</div>
+                            <div class="toggle-desc">Access 150,000+ icons from 100+ open-source icon sets.</div>
+                        </div>
+                        <div class="toggle" id="toggleIconify"></div>
+                    </div>
+                    
+                    <div id="iconifySettings" style="display:none; padding:16px; background:var(--bg-base); border-radius:12px; margin-bottom: 24px;">
+                        <div class="form-group" style="margin:0;">
+                            <label>Preferred Icon Set (optional)</label>
+                            <select id="iconifySet">
+                                <option value="">All icon sets (Search globally)</option>
+                                <option value="mdi">Material Design Icons</option>
+                                <option value="fa6-solid">Font Awesome 6 Solid</option>
+                                <option value="fa6-regular">Font Awesome 6 Regular</option>
+                                <option value="heroicons">Heroicons</option>
+                                <option value="lucide">Lucide</option>
+                                <option value="tabler">Tabler Icons</option>
+                                <option value="ph">Phosphor Icons</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <h3 class="settings-section-title" style="margin-top:32px;">Stock Image Providers</h3>
+                    
+                    <div class="toggle-row">
+                        <div>
+                            <div class="toggle-label">Lorem Picsum</div>
+                            <div class="toggle-desc">Random placeholder images (no API key needed).</div>
+                        </div>
+                        <div class="toggle active" id="togglePicsum"></div>
+                    </div>
+                    
+                    <div class="toggle-row" style="border-bottom: none;">
+                        <div>
+                            <div class="toggle-label">Unsplash API</div>
+                            <div class="toggle-desc">High-quality professional stock photos. Requires an API key.</div>
+                        </div>
+                        <div class="toggle" id="toggleUnsplash"></div>
+                    </div>
+                    <div id="unsplashSettings" style="display:none; padding:16px; background:var(--bg-base); border-radius:12px; margin-bottom: 16px;">
+                        <div class="form-group" style="margin:0;">
+                            <label>Unsplash Access Key</label>
+                            <input type="password" id="unsplashKey" placeholder="Enter your Unsplash API key">
+                        </div>
+                        <div style="font-size:11px; color:var(--text-dim); margin-top:8px;">
+                            Get a free API key at <a href="https://unsplash.com/developers" target="_blank" style="color:var(--accent);">unsplash.com/developers</a>
+                        </div>
+                    </div>
+                    
+                    <div class="toggle-row" style="border-bottom: none;">
+                        <div>
+                            <div class="toggle-label">Pexels API</div>
+                            <div class="toggle-desc">Free stock photos and videos. Requires an API key.</div>
+                        </div>
+                        <div class="toggle" id="togglePexels"></div>
+                    </div>
+                    <div id="pexelsSettings" style="display:none; padding:16px; background:var(--bg-base); border-radius:12px;">
+                        <div class="form-group" style="margin:0;">
+                            <label>Pexels API Key</label>
+                            <input type="password" id="pexelsKey" placeholder="Enter your Pexels API key">
+                        </div>
+                        <div style="font-size:11px; color:var(--text-dim); margin-top:8px;">
+                            Get a free API key at <a href="https://www.pexels.com/api/" target="_blank" style="color:var(--accent);">pexels.com/api</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Data & Storage Section -->
+                <div class="settings-section" id="settings-data">
+                    <h3 class="settings-section-title">Data Management</h3>
+                    
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <span class="stat-label">Local Sessions</span>
+                            <span class="stat-value" id="settingsStatSessions">0</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-label">Total Captures</span>
+                            <span class="stat-value" id="settingsStatCaptures">0</span>
+                        </div>
+                    </div>
+
+                    <p style="color:var(--text-dim); font-size:13px; line-height:1.5; margin-bottom: 24px;">
+                        All data is stored locally in your browser using IndexedDB. Settings are stored in LocalStorage.
+                        Captures are generated by your local Node service and are not sent to external screenshot providers.
+                    </p>
+
+                    <h4 style="font-size:14px; margin-bottom:12px; color:var(--text);">Configuration Backups</h4>
+                    <div style="display:flex; gap:12px; margin-bottom: 32px;">
+                        <button class="btn btn-default" id="exportSettingsBtn">⬇️ Export Settings</button>
+                        <button class="btn btn-default" id="importSettingsBtn">⬆️ Import Settings</button>
+                        <input type="file" id="settingsFileInput" accept=".json" style="display:none;">
+                    </div>
+
+                    <div class="danger-zone">
+                        <h4>Danger Zone</h4>
+                        <p>This action is irreversible. It will delete all your sessions, captures, and annotations from this browser.</p>
+                        <button class="btn btn-danger" id="dangerClearDataBtn">🗑️ Clear All Local Data</button>
+                    </div>
+                </div>
+
+            </div>
+            
+            <div class="settings-footer">
+                <button class="btn btn-default" id="settingsCancelBtn">Cancel</button>
+                <button class="btn btn-primary" id="settingsSaveBtn">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- PDF Loading Modal -->
+<div class="modal-overlay" id="pdfModal" role="dialog" aria-modal="true" aria-labelledby="pdfModalTitle">
+    <div class="modal" tabindex="-1">
+        <h3 id="pdfModalTitle">📄 Load PDF</h3>
+        <p>Load a PDF from a URL or upload a file from your device.</p>
+        
+        <div class="form-group">
+            <label>PDF URL</label>
+            <input type="url" id="pdfUrlInput" placeholder="https://example.com/document.pdf">
+        </div>
+        
+        <div style="text-align:center; margin: 15px 0; color: var(--text-dim); font-size: 12px;">— OR —</div>
+        
+        <div class="form-group">
+            <label>Upload File</label>
+            <input type="file" id="pdfFileInput" accept="application/pdf">
+        </div>
+        
+        <div class="modal-actions">
+            <button class="btn btn-default" id="pdfCancelBtn">Cancel</button>
+            <button class="btn btn-primary" id="pdfLoadBtn">Load PDF</button>
+        </div>
+    </div>
+</div>
+
+<!-- Export Modal -->
+<div class="modal-overlay" id="exportModal" role="dialog" aria-modal="true" aria-labelledby="exportModalTitle">
+    <div class="modal" tabindex="-1">
+        <h3 id="exportModalTitle">Export Captures</h3>
+        <p id="exportInfo">Export your marked-up captures.</p>
+        <div class="modal-actions">
+            <button class="btn btn-default" id="exportCancelBtn">Cancel</button>
+            <button class="btn btn-default" id="exportCopyGridBtn" title="Copy combined grid to clipboard">📋 Copy Grid</button>
+            <button class="btn btn-primary" id="exportZipBtn">Export ZIP</button>
+            <button class="btn btn-success" id="exportPdfBtn">Export PDF</button>
+        </div>
+    </div>
+</div>
+
+<!-- Confirm Modal -->
+<div class="modal-overlay" id="confirmModal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+    <div class="modal" tabindex="-1">
+        <h3 id="confirmTitle">Confirm</h3>
+        <p id="confirmMsg">Are you sure?</p>
+        <div class="modal-actions">
+            <button class="btn btn-default" id="confirmCancelBtn">Cancel</button>
+            <button class="btn btn-danger" id="confirmOkBtn">Confirm</button>
+        </div>
+    </div>
+</div>
+
+<!-- Prompt Modal -->
+<div class="modal-overlay" id="promptModal" role="dialog" aria-modal="true" aria-labelledby="promptTitle">
+    <div class="modal" tabindex="-1">
+        <h3 id="promptTitle">Input Required</h3>
+        <p id="promptMsg">Please enter a value.</p>
+        <div class="form-group" style="margin-top: 12px;">
+            <label for="promptInput" id="promptInputLabel">Value</label>
+            <input type="text" id="promptInput" placeholder="Enter value..." spellcheck="false">
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-default" id="promptCancelBtn">Cancel</button>
+            <button class="btn btn-primary" id="promptOkBtn">Save</button>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true">
+    <span id="toastIcon">✓</span>
+    <span id="toastMsg">Success</span>
+</div>
+
+<script src="js/core/settings.js"></script>
+<script src="js/core/db.js"></script>
+<script src="js/core/utils.js"></script>
+<script src="js/ui/ui-utils.js"></script>
+<script src="js/assets/icons.js"></script>
+<script src="js/assets/emojis.js"></script>
+<script src="js/assets/stock.js"></script>
+<script src="js/features/library.js"></script>
+<script src="js/features/browser.js?v=1.2"></script>
+<script src="js/features/pdf-viewer.js"></script>
+<script src="js/features/notes.js"></script>
+<script src="js/editor/editor.js?v=1.2"></script>
+<script src="js/editor/exporter.js"></script>
+<script src="js/ui/settings-ui.js?v=1.2"></script>
+<script src="js/app.js?v=1.2"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

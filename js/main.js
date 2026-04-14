@@ -1,0 +1,1 @@
+window.onload = () => App.init();

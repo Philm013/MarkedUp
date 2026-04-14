@@ -1,0 +1,15 @@
+{
+  "name": "devmarkup-pro",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Node-local screenshot and markup tool powered by Playwright",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "playwright": "^1.52.0"
+  }
+}
