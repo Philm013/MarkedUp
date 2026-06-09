@@ -1197,7 +1197,10 @@
             right: 20px;
             z-index: 40;
             box-shadow: var(--shadow-lg);
+            cursor: grab;
         }
+
+        .editor-bar.toolbar-floating.is-dragging { cursor: grabbing; }
 
         .editor-bar.toolbar-top-docked {
             position: fixed;
