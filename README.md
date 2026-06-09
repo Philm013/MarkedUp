@@ -17,6 +17,8 @@ MarkedUp is no longer a static, single-file prototype. The current app is a modu
 
 The codebase is functional and fairly feature-rich, but it is still an app-in-browser architecture without automated tests or a formal build pipeline.
 
+Main-branch commits are now automatically mirrored to the `gh-pages` branch via GitHub Actions so GitHub Pages can publish from branch content without manual syncing.
+
 ## Feature Set
 
 ### Capture and Input
@@ -118,6 +120,14 @@ http://127.0.0.1:4777
 ```
 
 The server attempts to launch bundled Chromium first and falls back to the local Chrome channel if Chromium is unavailable.
+
+## GitHub Pages Branch Publishing
+
+- Workflow file: `.github/workflows/publish-gh-pages-branch.yml`
+- Trigger: every push to `main` (and manual `workflow_dispatch`)
+- Behavior: force-pushes `main` HEAD to `gh-pages` so the Pages branch always matches mainline code
+
+This repository still uses a local Node server for full functionality (`/proxy` and `/api/capture`). A branch-based Pages publish is useful for static hosting and documentation, but server-backed capture/proxy features require running `npm start`.
 
 ## Capture Behavior
 
