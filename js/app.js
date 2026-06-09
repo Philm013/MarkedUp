@@ -2,6 +2,7 @@ const App = {
     mode: 'library',
     layoutFrame: null,
     layoutNeedsToolbarApply: false,
+    layoutListenersBound: false,
     layout: {
         edgeMargin: 12,
         viewportPadding: 8,
@@ -244,6 +245,14 @@ const App = {
         const selected = Settings.get('editorToolbarPosition') || 'floating';
         if (selected === 'floating') return;
         this.positionDockedDesktopToolbar(editorBar, selected);
+    },
+
+    clampToViewport(value, size, padding) {
+        return Math.max(padding, Math.min(value, window.innerWidth - size - padding));
+    },
+
+    clampVerticalToViewport(value, size, padding) {
+        return Math.max(padding, Math.min(value, window.innerHeight - size - padding));
     },
 
     scheduleLayoutRefresh(applyToolbar = false) {
@@ -679,12 +688,15 @@ const App = {
             });
         };
 
-        window.addEventListener('resize', () => {
-            this.scheduleLayoutRefresh(true);
-        });
-        window.addEventListener('scroll', () => {
-            this.scheduleLayoutRefresh(false);
-        }, true);
+        if (!this.layoutListenersBound) {
+            window.addEventListener('resize', () => {
+                this.scheduleLayoutRefresh(true);
+            });
+            window.addEventListener('scroll', () => {
+                this.scheduleLayoutRefresh(false);
+            }, true);
+            this.layoutListenersBound = true;
+        }
     },
 
     resetDropdownMenuPosition(menu) {
@@ -703,32 +715,33 @@ const App = {
         menu.classList.add('positioned');
 
         const buttonRect = button.getBoundingClientRect();
-        const initialRect = menu.getBoundingClientRect();
+        const menuInitialRect = menu.getBoundingClientRect();
         const spaceBelow = window.innerHeight - buttonRect.bottom - margin;
         const spaceAbove = buttonRect.top - margin;
-        const shouldOpenUp = initialRect.height > spaceBelow && spaceAbove > spaceBelow;
+        const shouldOpenUp = menuInitialRect.height > spaceBelow && spaceAbove > spaceBelow;
         if (shouldOpenUp) menu.classList.add('open-up');
 
-        const menuRect = menu.getBoundingClientRect();
+        const adjustedMenuRect = menu.getBoundingClientRect();
         let top = shouldOpenUp
-            ? buttonRect.top - menuRect.height - margin
+            ? buttonRect.top - adjustedMenuRect.height - margin
             : buttonRect.bottom + margin;
-        top = Math.max(margin, Math.min(top, window.innerHeight - menuRect.height - margin));
+        top = this.clampVerticalToViewport(top, adjustedMenuRect.height, margin);
 
-        let left = buttonRect.right - menuRect.width;
-        if (left < margin && buttonRect.left + menuRect.width <= window.innerWidth - margin) {
+        let left = buttonRect.right - adjustedMenuRect.width;
+        if (left < margin && buttonRect.left + adjustedMenuRect.width <= window.innerWidth - margin) {
             menu.classList.add('open-left');
             left = buttonRect.left;
         }
-        left = Math.max(margin, Math.min(left, window.innerWidth - menuRect.width - margin));
+        left = this.clampToViewport(left, adjustedMenuRect.width, margin);
 
         menu.style.left = `${Math.round(left)}px`;
         menu.style.top = `${Math.round(top)}px`;
 
+        const totalMargin = margin * 2;
         const maxHeight = shouldOpenUp
-            ? Math.max(this.layout.minDropdownHeight, buttonRect.top - margin * 2)
-            : Math.max(this.layout.minDropdownHeight, window.innerHeight - buttonRect.bottom - margin * 2);
-        if (menuRect.height > maxHeight) {
+            ? Math.max(this.layout.minDropdownHeight, buttonRect.top - totalMargin)
+            : Math.max(this.layout.minDropdownHeight, window.innerHeight - buttonRect.bottom - totalMargin);
+        if (adjustedMenuRect.height > maxHeight) {
             menu.style.maxHeight = `${Math.floor(maxHeight)}px`;
             menu.style.overflowY = 'auto';
         }
