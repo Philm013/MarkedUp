@@ -12,8 +12,8 @@ const App = {
         this.renderMobileEditorTools();
         this.applyToolbarPosition();
         
-        const defaultView = Settings.get('defaultView') || 'library';
-        this.setView(defaultView);
+        const defaultView = Settings.get('defaultView');
+        this.setView(defaultView === 'library' ? 'library' : 'markup');
         
         window.addEventListener('paste', async e => {
             const item = Array.from(e.clipboardData.items).find(i => i.type.startsWith('image/'));
@@ -125,6 +125,37 @@ const App = {
         if (this.mode === 'markup') {
             setTimeout(() => Editor.resize(), 50);
         }
+
+        this.applyDesktopToolbarPosition(isMob);
+    },
+
+    applyDesktopToolbarPosition(isMob) {
+        const editorBar = document.getElementById('editorBar');
+        if (!editorBar || isMob) {
+            if (editorBar) {
+                editorBar.classList.remove(
+                    'toolbar-floating',
+                    'toolbar-top-docked',
+                    'toolbar-bottom-docked',
+                    'toolbar-left-docked',
+                    'toolbar-right-docked'
+                );
+            }
+            return;
+        }
+
+        const position = Settings.get('editorToolbarPosition') || 'floating';
+        const allowed = ['floating', 'top-docked', 'bottom-docked', 'left-docked', 'right-docked'];
+        const selected = allowed.includes(position) ? position : 'floating';
+
+        editorBar.classList.remove(
+            'toolbar-floating',
+            'toolbar-top-docked',
+            'toolbar-bottom-docked',
+            'toolbar-left-docked',
+            'toolbar-right-docked'
+        );
+        editorBar.classList.add(`toolbar-${selected}`);
     },
 
     makeDraggable(el) {
@@ -199,12 +230,10 @@ const App = {
 
         // Mode Switches
         document.getElementById('btnLibrary').onclick = () => this.setView('library');
-        document.getElementById('btnBrowse').onclick = () => this.setView('browse');
         document.getElementById('btnMarkup').onclick = () => this.setView('markup');
         
         // Mobile Navigation
         bindKeyboardActivate(document.getElementById('navLibrary'), () => this.setView('library'));
-        bindKeyboardActivate(document.getElementById('navBrowse'), () => this.setView('browse'));
         bindKeyboardActivate(document.getElementById('navMarkup'), () => this.setView('markup'));
         bindKeyboardActivate(document.getElementById('navAssets'), () => {
             document.getElementById('sidebar').classList.add('open');
@@ -229,15 +258,6 @@ const App = {
         if (selMobH) selMobH.onclick = () => Editor.setTool('select');
         const handMobH = document.getElementById('tool-hand-mob-h');
         if (handMobH) handMobH.onclick = () => Editor.setTool('hand');
-
-        const goMob = document.getElementById('goBtnMob');
-        if (goMob) goMob.onclick = () => {
-            const val = document.getElementById('urlInputMob').value;
-            document.getElementById('urlInput').value = val;
-            Browser.go();
-        };
-        const capMobH = document.getElementById('captureBtnMobHeader');
-        if (capMobH) capMobH.onclick = () => Browser.capture();
 
         // Tray Logic
         document.getElementById('mobileDrawingTrigger').onclick = () => this.openTray();
@@ -274,26 +294,9 @@ const App = {
         document.getElementById('landingNewBtn').onclick = () => this.startNew();
         document.getElementById('landingExportBtn').onclick = () => this.exportMultipleSessions();
         
-        // Browse Actions (Desktop + Mobile)
-        const go = () => Browser.go();
-        document.getElementById('goBtn').onclick = go;
-        document.getElementById('urlInput').onkeypress = (e) => e.key === 'Enter' && go();
-        
-        const setViewport = (val) => {
-            const frame = document.getElementById('webFrame');
-            if (val === 'desktop') frame.style.width = '100%';
-            else if (val === 'tablet') frame.style.width = '768px';
-            else if (val === 'mobile') frame.style.width = '375px';
-        };
-        document.getElementById('viewportSelect').onchange = (e) => setViewport(e.target.value);
-
         const openPdf = () => Modal.open('pdfModal');
         const pdfBtn = document.getElementById('pdfOpenBtn');
         if (pdfBtn) pdfBtn.onclick = openPdf;
-
-        // Capture Actions
-        const capture = () => Browser.capture();
-        document.getElementById('captureBtn').onclick = capture;
         
         // Paste Logic
         const doPaste = async () => {
@@ -460,21 +463,20 @@ const App = {
     },
 
     setView(mode) {
-        this.mode = mode;
+        const normalizedMode = mode === 'library' ? 'library' : 'markup';
+        this.mode = normalizedMode;
         const isMob = window.innerWidth <= 768;
 
         // Header Buttons
-        document.getElementById('btnLibrary').classList.toggle('active', mode === 'library');
-        document.getElementById('btnBrowse').classList.toggle('active', mode === 'browse');
-        document.getElementById('btnMarkup').classList.toggle('active', mode === 'markup');
+        document.getElementById('btnLibrary').classList.toggle('active', normalizedMode === 'library');
+        document.getElementById('btnMarkup').classList.toggle('active', normalizedMode === 'markup');
         
         // Mobile Nav
         const mobNav = document.getElementById('mobileNav');
         if (mobNav) {
             mobNav.style.display = isMob ? 'flex' : 'none';
-            document.getElementById('navLibrary').classList.toggle('active', mode === 'library');
-            document.getElementById('navBrowse').classList.toggle('active', mode === 'browse');
-            document.getElementById('navMarkup').classList.toggle('active', mode === 'markup');
+            document.getElementById('navLibrary').classList.toggle('active', normalizedMode === 'library');
+            document.getElementById('navMarkup').classList.toggle('active', normalizedMode === 'markup');
         }
 
         // Sidebar cleanup
@@ -482,34 +484,25 @@ const App = {
         document.getElementById('sidebarOverlay').classList.remove('active');
         
         // Mobile Header Controls Swapping
-        const mobHeaderBrowse = document.getElementById('mobHeaderBrowse');
         const mobHeaderMarkup = document.getElementById('mobHeaderMarkup');
         const mobTrigger = document.getElementById('mobileDrawingTrigger');
 
         if (isMob) {
-            if (mobHeaderBrowse) mobHeaderBrowse.style.display = (mode === 'browse') ? 'flex' : 'none';
-            if (mobHeaderMarkup) mobHeaderMarkup.style.display = (mode === 'markup') ? 'flex' : 'none';
-            if (mobTrigger) mobTrigger.style.display = (mode === 'markup') ? 'flex' : 'none';
-            
-            // Sync desktop URL input to mobile
-            if (mode === 'browse') {
-                document.getElementById('urlInputMob').value = document.getElementById('urlInput').value;
-            }
+            if (mobHeaderMarkup) mobHeaderMarkup.style.display = (normalizedMode === 'markup') ? 'flex' : 'none';
+            if (mobTrigger) mobTrigger.style.display = (normalizedMode === 'markup') ? 'flex' : 'none';
         } else {
             if (mobTrigger) mobTrigger.style.display = 'none';
         }
 
         // Desktop Toolbar Visibility
-        const browserBar = document.getElementById('browserBar');
         const markupBar = document.getElementById('markupBar');
         const topEditorBar = document.getElementById('editorBar');
         const sessionActions = document.getElementById('sessionActions');
 
         if (!isMob) {
-            if (browserBar) browserBar.style.display = (mode === 'browse') ? 'flex' : 'none';
-            if (markupBar) markupBar.style.display = (mode === 'markup') ? 'flex' : 'none';
-            if (topEditorBar) topEditorBar.classList.toggle('active', mode === 'markup');
-            if (sessionActions) sessionActions.style.display = (mode !== 'library') ? 'flex' : 'none';
+            if (markupBar) markupBar.style.display = (normalizedMode === 'markup') ? 'flex' : 'none';
+            if (topEditorBar) topEditorBar.classList.toggle('active', normalizedMode === 'markup');
+            if (sessionActions) sessionActions.style.display = (normalizedMode !== 'library') ? 'flex' : 'none';
         }
         
         // Layers/History panels should close on view change
@@ -518,29 +511,26 @@ const App = {
         this.closeTray();
 
         // Main View Layers
-        document.getElementById('browseView').classList.toggle('active', mode === 'browse');
-        document.getElementById('markupView').classList.toggle('active', mode === 'markup');
-        document.getElementById('landingPage').classList.toggle('active', mode === 'library');
+        document.getElementById('markupView').classList.toggle('active', normalizedMode === 'markup');
+        document.getElementById('landingPage').classList.toggle('active', normalizedMode === 'library');
         
         // Sidebar display logic
         const sidebar = document.getElementById('sidebar');
         if (isMob) {
             sidebar.style.display = 'flex'; 
         } else {
-            sidebar.style.display = (mode === 'library') ? 'none' : 'flex';
-            document.querySelector('.app').style.gridTemplateColumns = (mode === 'library') ? '1fr' : 'auto 1fr';
+            sidebar.style.display = (normalizedMode === 'library') ? 'none' : 'flex';
+            document.querySelector('.app').style.gridTemplateColumns = (normalizedMode === 'library') ? '1fr' : 'auto 1fr';
         }
         
-        if (mode === 'library') {
+        if (normalizedMode === 'library') {
             this.renderLandingPage();
-        } else if (mode === 'markup') {
+        } else if (normalizedMode === 'markup') {
             setTimeout(() => {
                 Editor.resize();
                 if (Editor.session) Editor.fitToView();
                 this.renderMobileEditorTools();
             }, 50);
-        } else if (mode === 'browse') {
-            if (!document.getElementById('webFrame').src) Browser.go();
         }
         
         this.applyToolbarPosition();

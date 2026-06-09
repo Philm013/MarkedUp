@@ -73,19 +73,6 @@ const SettingsUI = {
         document.getElementById('dangerClearDataBtn').addEventListener('click', () => this.clearAllData());
         document.getElementById('exportSettingsBtn').addEventListener('click', () => this.exportSettings());
 
-        const captureModeSelect = document.getElementById('settingCaptureMode');
-        if (captureModeSelect) {
-            captureModeSelect.addEventListener('change', (e) => {
-                const mode = String(e.target.value || 'auto').toLowerCase();
-                console.log(`[SettingsUI] Capture mode select changed to: "${mode}"`);
-                Settings.set('captureMode', mode);
-                Toast.show(`Capture mode: ${mode}`);
-                console.log(`[SettingsUI] Mode saved and toast shown`);
-            });
-        } else {
-            console.warn('[SettingsUI] settingCaptureMode element not found at init');
-        }
-        
         const fileInput = document.getElementById('settingsFileInput');
         document.getElementById('importSettingsBtn').addEventListener('click', () => fileInput.click());
         fileInput.addEventListener('change', (e) => this.importSettings(e));
@@ -126,8 +113,10 @@ const SettingsUI = {
         document.getElementById('settingPinchSensitivityDisplay').textContent = parseFloat(pinch).toFixed(1) + 'x';
         
         document.getElementById('settingMobileToolbarPosition').value = settings.mobileToolbarPosition || 'bottom';
-        document.getElementById('settingCaptureMode').value = settings.captureMode || 'auto';
-        document.getElementById('settingDefaultView').value = settings.defaultView || 'library';
+        const toolbarPosition = settings.editorToolbarPosition || 'floating';
+        document.getElementById('settingEditorToolbarPosition').value = toolbarPosition;
+        const defaultView = settings.defaultView === 'library' ? 'library' : 'markup';
+        document.getElementById('settingDefaultView').value = defaultView;
         
         this.updateSettingsVisibility();
 
@@ -167,7 +156,7 @@ const SettingsUI = {
             defaultStrokeWidth: parseInt(document.getElementById('settingDefaultStrokeWidth').value),
             pinchSensitivity: parseFloat(document.getElementById('settingPinchSensitivity').value),
             mobileToolbarPosition: document.getElementById('settingMobileToolbarPosition').value,
-            captureMode: document.getElementById('settingCaptureMode').value,
+            editorToolbarPosition: document.getElementById('settingEditorToolbarPosition').value,
             defaultView: document.getElementById('settingDefaultView').value
         });
         

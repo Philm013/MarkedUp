@@ -14,9 +14,8 @@ const Settings = {
         defaultStrokeWidth: 4,
         pinchSensitivity: 1.0,
         mobileToolbarPosition: 'bottom', // 'top', 'bottom', 'floating'
-        captureMode: 'auto', // 'auto' | 'live' | 'node' | 'trueview'
-        nodeCaptureEndpoint: '/api/capture',
-        defaultView: 'browse', // 'browse' or 'markup'
+        editorToolbarPosition: 'floating', // 'floating' | 'top-docked' | 'bottom-docked' | 'left-docked' | 'right-docked'
+        defaultView: 'markup', // 'library' or 'markup'
         favorites: [] // List of favorite asset objects
     },
     
@@ -28,23 +27,15 @@ const Settings = {
     },
     
     get(key) {
-        const val = this.data[key];
-        if (key === 'captureMode') {
-            console.log(`[Settings.get] captureMode = "${val}"`);
-        }
-        return val;
+        return this.data[key];
     },
     
     set(key, value) {
-        if (key === 'captureMode') {
-            console.log(`[Settings.set] Setting captureMode = "${value}" (was: "${this.data[key]}")`);
-        }
         this.data[key] = value;
         this.save();
     },
     
     save() {
-        console.log(`[Settings.save] Persisting to localStorage, captureMode = "${this.data.captureMode}"`);
         localStorage.setItem('devmarkup_settings', JSON.stringify(this.data));
     },
     
@@ -57,4 +48,3 @@ const Settings = {
         this.save();
     }
 };
-

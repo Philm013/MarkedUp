@@ -1190,6 +1190,50 @@
         }
         
         .editor-bar.active { display: flex; }
+
+        .editor-bar.toolbar-floating {
+            position: fixed;
+            top: 88px;
+            right: 20px;
+            z-index: 40;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .editor-bar.toolbar-top-docked {
+            position: fixed;
+            top: 88px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 40;
+            box-shadow: var(--shadow-md);
+        }
+
+        .editor-bar.toolbar-bottom-docked {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 40;
+            box-shadow: var(--shadow-md);
+        }
+
+        .editor-bar.toolbar-left-docked {
+            position: fixed;
+            top: 50%;
+            left: 20px;
+            transform: translateY(-50%);
+            z-index: 40;
+            box-shadow: var(--shadow-md);
+        }
+
+        .editor-bar.toolbar-right-docked {
+            position: fixed;
+            top: 50%;
+            right: 20px;
+            transform: translateY(-50%);
+            z-index: 40;
+            box-shadow: var(--shadow-md);
+        }
         
         .tool-group {
             display: flex;
