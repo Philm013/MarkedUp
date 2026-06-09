@@ -721,18 +721,18 @@ const App = {
         const shouldOpenUp = menuInitialRect.height > spaceBelow && spaceAbove > spaceBelow;
         if (shouldOpenUp) menu.classList.add('open-up');
 
-        const adjustedMenuRect = menu.getBoundingClientRect();
+        const updatedMenuRect = menu.getBoundingClientRect();
         let top = shouldOpenUp
-            ? buttonRect.top - adjustedMenuRect.height - margin
+            ? buttonRect.top - updatedMenuRect.height - margin
             : buttonRect.bottom + margin;
-        top = this.clampVerticalToViewport(top, adjustedMenuRect.height, margin);
+        top = this.clampVerticalToViewport(top, updatedMenuRect.height, margin);
 
-        let left = buttonRect.right - adjustedMenuRect.width;
-        if (left < margin && buttonRect.left + adjustedMenuRect.width <= window.innerWidth - margin) {
+        let left = buttonRect.right - updatedMenuRect.width;
+        if (left < margin && buttonRect.left + updatedMenuRect.width <= window.innerWidth - margin) {
             menu.classList.add('open-left');
             left = buttonRect.left;
         }
-        left = this.clampHorizontalToViewport(left, adjustedMenuRect.width, margin);
+        left = this.clampHorizontalToViewport(left, updatedMenuRect.width, margin);
 
         menu.style.left = `${Math.round(left)}px`;
         menu.style.top = `${Math.round(top)}px`;
@@ -741,7 +741,7 @@ const App = {
         const maxHeight = shouldOpenUp
             ? Math.max(this.layout.minDropdownHeight, buttonRect.top - totalMargin)
             : Math.max(this.layout.minDropdownHeight, window.innerHeight - buttonRect.bottom - totalMargin);
-        if (adjustedMenuRect.height > maxHeight) {
+        if (updatedMenuRect.height > maxHeight) {
             menu.style.maxHeight = `${Math.floor(maxHeight)}px`;
             menu.style.overflowY = 'auto';
         }
