@@ -140,6 +140,12 @@ const App = {
                     'toolbar-left-docked',
                     'toolbar-right-docked'
                 );
+                editorBar.classList.remove('is-dragging');
+                editorBar.style.left = '';
+                editorBar.style.top = '';
+                editorBar.style.right = '';
+                editorBar.style.bottom = '';
+                editorBar.style.transform = '';
             }
             return;
         }
@@ -156,6 +162,88 @@ const App = {
             'toolbar-right-docked'
         );
         editorBar.classList.add(`toolbar-${selected}`);
+        this.makeDesktopToolbarDraggable(editorBar);
+
+        if (selected !== 'floating') {
+            editorBar.classList.remove('is-dragging');
+            editorBar.style.left = '';
+            editorBar.style.top = '';
+            editorBar.style.right = '';
+            editorBar.style.bottom = '';
+            editorBar.style.transform = '';
+        }
+    },
+
+    makeDesktopToolbarDraggable(el) {
+        if (el.dataset.desktopDraggable) return;
+        el.dataset.desktopDraggable = 'true';
+
+        let isDragging = false;
+        let startX = 0;
+        let startY = 0;
+        let startTop = 0;
+        let startLeft = 0;
+
+        el.addEventListener('pointerdown', (e) => {
+            if (e.button !== 0) return;
+            if (window.innerWidth <= 768) return;
+            if ((Settings.get('editorToolbarPosition') || 'floating') !== 'floating') return;
+            if (e.target.closest('button, input, select, textarea, .dropdown-menu, .dropdown-item, .color-well')) return;
+
+            const rect = el.getBoundingClientRect();
+            isDragging = false;
+            startX = e.clientX;
+            startY = e.clientY;
+            startTop = rect.top;
+            startLeft = rect.left;
+
+            el.setPointerCapture(e.pointerId);
+
+            const onPointerMove = (moveEvent) => {
+                const deltaX = moveEvent.clientX - startX;
+                const deltaY = moveEvent.clientY - startY;
+                if (!isDragging && (Math.abs(deltaX) > 6 || Math.abs(deltaY) > 6)) {
+                    isDragging = true;
+                    el.classList.add('is-dragging');
+                }
+                if (!isDragging) return;
+
+                const maxTop = Math.max(0, window.innerHeight - el.offsetHeight);
+                const maxLeft = Math.max(0, window.innerWidth - el.offsetWidth);
+                const nextTop = Math.min(maxTop, Math.max(0, startTop + deltaY));
+                const nextLeft = Math.min(maxLeft, Math.max(0, startLeft + deltaX));
+
+                el.style.top = `${Math.round(nextTop)}px`;
+                el.style.left = `${Math.round(nextLeft)}px`;
+                el.style.right = 'auto';
+                el.style.bottom = 'auto';
+                el.style.transform = 'none';
+            };
+
+            const onPointerUp = (upEvent) => {
+                if (el.hasPointerCapture(e.pointerId)) el.releasePointerCapture(e.pointerId);
+                el.removeEventListener('pointermove', onPointerMove);
+                el.removeEventListener('pointerup', onPointerUp);
+                el.removeEventListener('pointercancel', onPointerCancel);
+                el.classList.remove('is-dragging');
+                if (isDragging) {
+                    upEvent.preventDefault();
+                    upEvent.stopPropagation();
+                }
+            };
+
+            const onPointerCancel = () => {
+                if (el.hasPointerCapture(e.pointerId)) el.releasePointerCapture(e.pointerId);
+                el.removeEventListener('pointermove', onPointerMove);
+                el.removeEventListener('pointerup', onPointerUp);
+                el.removeEventListener('pointercancel', onPointerCancel);
+                el.classList.remove('is-dragging');
+            };
+
+            el.addEventListener('pointermove', onPointerMove);
+            el.addEventListener('pointerup', onPointerUp);
+            el.addEventListener('pointercancel', onPointerCancel);
+        });
     },
 
     makeDraggable(el) {
@@ -297,6 +385,29 @@ const App = {
         const openPdf = () => Modal.open('pdfModal');
         const pdfBtn = document.getElementById('pdfOpenBtn');
         if (pdfBtn) pdfBtn.onclick = openPdf;
+
+        const launchSnippingTool = () => {
+            const ua = String(navigator.userAgent || '');
+            const isWindows = /Windows/i.test(ua) || /Win/i.test(String(navigator.platform || ''));
+            if (!isWindows) {
+                Toast.show('Snipping Tool launcher is only available on Windows.', 'error');
+                return;
+            }
+            try {
+                const link = document.createElement('a');
+                link.href = 'ms-screenclip:';
+                link.style.display = 'none';
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                Toast.show('Snipping Tool launch requested.');
+            } catch (err) {
+                console.error('Snipping Tool launch failed:', err);
+                Toast.show('Unable to launch Snipping Tool from this browser.', 'error');
+            }
+        };
+        const snipBtn = document.getElementById('launchSnippingToolBtn');
+        if (snipBtn) snipBtn.onclick = launchSnippingTool;
         
         // Paste Logic
         const doPaste = async () => {
