@@ -389,13 +389,14 @@ const App = {
         const launchSnippingTool = () => {
             const ua = String(navigator.userAgent || '');
             const isWindows = /Windows/i.test(ua) || /Win/i.test(String(navigator.platform || ''));
+            const launchMsg = 'Snipping Tool launch requested. If it did not open, press Win + Shift + S.';
             if (!isWindows) {
                 Toast.show('Snipping Tool launcher is only available on Windows.', 'error');
                 return;
             }
             try {
                 window.location.assign('ms-screenclip:');
-                Toast.show('Snipping Tool launch requested. If it did not open, press Win + Shift + S.');
+                Toast.show(launchMsg);
             } catch (err) {
                 try {
                     const link = document.createElement('a');
@@ -404,9 +405,9 @@ const App = {
                     document.body.appendChild(link);
                     link.click();
                     link.remove();
-                    Toast.show('Snipping Tool launch requested. If it did not open, press Win + Shift + S.');
+                    Toast.show(launchMsg);
                 } catch (fallbackErr) {
-                    console.error('Snipping Tool launch failed:', err, fallbackErr);
+                    console.error('Snipping Tool launch failed (primary and fallback attempts):', { primaryError: err, fallbackError: fallbackErr });
                     Toast.show('Unable to launch Snipping Tool from this browser.', 'error');
                 }
             }
