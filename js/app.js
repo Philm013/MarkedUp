@@ -389,21 +389,31 @@ const App = {
         const launchSnippingTool = () => {
             const ua = String(navigator.userAgent || '');
             const isWindows = /Windows/i.test(ua) || /Win/i.test(String(navigator.platform || ''));
+            const snipProtocol = 'ms-screenclip:';
+            const launchMsg = 'Snipping Tool launch requested. If it did not open, press Win + Shift + S.';
+            const launchViaAnchor = () => {
+                const link = document.createElement('a');
+                link.href = snipProtocol;
+                link.style.display = 'none';
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+            };
             if (!isWindows) {
                 Toast.show('Snipping Tool launcher is only available on Windows.', 'error');
                 return;
             }
             try {
-                const link = document.createElement('a');
-                link.href = 'ms-screenclip:';
-                link.style.display = 'none';
-                document.body.appendChild(link);
-                link.click();
-                link.remove();
-                Toast.show('Snipping Tool launch requested.');
+                window.location.assign(snipProtocol);
+                Toast.show(launchMsg);
             } catch (err) {
-                console.error('Snipping Tool launch failed:', err);
-                Toast.show('Unable to launch Snipping Tool from this browser.', 'error');
+                try {
+                    launchViaAnchor();
+                    Toast.show(launchMsg);
+                } catch (fallbackErr) {
+                    console.error('Snipping Tool launch failed. Verify protocol handler availability and browser external-protocol permissions.', err, fallbackErr);
+                    Toast.show('Unable to launch Snipping Tool from this browser.', 'error');
+                }
             }
         };
         const snipBtn = document.getElementById('launchSnippingToolBtn');
