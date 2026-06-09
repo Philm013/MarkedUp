@@ -1,7 +1,7 @@
 const App = {
     mode: 'library',
     layoutFrame: null,
-    layoutNeedsToolbarApply: false,
+    needsFullToolbarApply: false,
     layoutListenersBound: false,
     layout: {
         edgeMargin: 12,
@@ -247,7 +247,7 @@ const App = {
         this.positionDockedDesktopToolbar(editorBar, selected);
     },
 
-    clampToViewport(value, size, padding) {
+    clampHorizontalToViewport(value, size, padding) {
         return Math.max(padding, Math.min(value, window.innerWidth - size - padding));
     },
 
@@ -256,11 +256,11 @@ const App = {
     },
 
     scheduleLayoutRefresh(applyToolbar = false) {
-        this.layoutNeedsToolbarApply = this.layoutNeedsToolbarApply || applyToolbar;
+        this.needsFullToolbarApply = this.needsFullToolbarApply || applyToolbar;
         if (this.layoutFrame) return;
         this.layoutFrame = requestAnimationFrame(() => {
-            const shouldApplyToolbar = this.layoutNeedsToolbarApply;
-            this.layoutNeedsToolbarApply = false;
+            const shouldApplyToolbar = this.needsFullToolbarApply;
+            this.needsFullToolbarApply = false;
             this.layoutFrame = null;
             if (shouldApplyToolbar) {
                 this.applyToolbarPosition();
@@ -732,7 +732,7 @@ const App = {
             menu.classList.add('open-left');
             left = buttonRect.left;
         }
-        left = this.clampToViewport(left, adjustedMenuRect.width, margin);
+        left = this.clampHorizontalToViewport(left, adjustedMenuRect.width, margin);
 
         menu.style.left = `${Math.round(left)}px`;
         menu.style.top = `${Math.round(top)}px`;
