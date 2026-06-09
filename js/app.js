@@ -1,5 +1,12 @@
 const App = {
     mode: 'library',
+    layoutFrame: null,
+    layoutNeedsToolbarApply: false,
+    layout: {
+        edgeMargin: 12,
+        viewportPadding: 8,
+        minDropdownHeight: 140
+    },
 
     async init() {
         Settings.init();
@@ -201,8 +208,8 @@ const App = {
             return;
         }
 
-        const margin = 12;
-        const viewportPadding = 8;
+        const margin = this.layout.edgeMargin;
+        const viewportPadding = this.layout.viewportPadding;
         const toolbarWidth = editorBar.offsetWidth;
         const toolbarHeight = editorBar.offsetHeight;
         let top = rect.top + margin;
@@ -237,6 +244,22 @@ const App = {
         const selected = Settings.get('editorToolbarPosition') || 'floating';
         if (selected === 'floating') return;
         this.positionDockedDesktopToolbar(editorBar, selected);
+    },
+
+    scheduleLayoutRefresh(applyToolbar = false) {
+        this.layoutNeedsToolbarApply = this.layoutNeedsToolbarApply || applyToolbar;
+        if (this.layoutFrame) return;
+        this.layoutFrame = requestAnimationFrame(() => {
+            const shouldApplyToolbar = this.layoutNeedsToolbarApply;
+            this.layoutNeedsToolbarApply = false;
+            this.layoutFrame = null;
+            if (shouldApplyToolbar) {
+                this.applyToolbarPosition();
+            } else {
+                this.repositionDockedDesktopToolbar();
+            }
+            this.repositionActiveDropdowns();
+        });
     },
 
     makeDesktopToolbarDraggable(el) {
@@ -657,12 +680,10 @@ const App = {
         };
 
         window.addEventListener('resize', () => {
-            this.applyToolbarPosition();
-            this.repositionActiveDropdowns();
+            this.scheduleLayoutRefresh(true);
         });
         window.addEventListener('scroll', () => {
-            this.repositionDockedDesktopToolbar();
-            this.repositionActiveDropdowns();
+            this.scheduleLayoutRefresh(false);
         }, true);
     },
 
@@ -677,7 +698,7 @@ const App = {
 
     positionDropdownMenu(button, menu) {
         if (!button || !menu) return;
-        const margin = 10;
+        const margin = this.layout.edgeMargin;
         this.resetDropdownMenuPosition(menu);
         menu.classList.add('positioned');
 
@@ -705,8 +726,8 @@ const App = {
         menu.style.top = `${Math.round(top)}px`;
 
         const maxHeight = shouldOpenUp
-            ? Math.max(140, buttonRect.top - margin * 2)
-            : Math.max(140, window.innerHeight - buttonRect.bottom - margin * 2);
+            ? Math.max(this.layout.minDropdownHeight, buttonRect.top - margin * 2)
+            : Math.max(this.layout.minDropdownHeight, window.innerHeight - buttonRect.bottom - margin * 2);
         if (menuRect.height > maxHeight) {
             menu.style.maxHeight = `${Math.floor(maxHeight)}px`;
             menu.style.overflowY = 'auto';
