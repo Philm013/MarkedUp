@@ -123,7 +123,10 @@ const App = {
         }
         
         if (this.mode === 'markup') {
-            setTimeout(() => Editor.resize(), 50);
+            setTimeout(() => {
+                Editor.resize();
+                this.repositionDockedDesktopToolbar();
+            }, 50);
         }
 
         this.applyDesktopToolbarPosition(isMob);
@@ -141,11 +144,7 @@ const App = {
                     'toolbar-right-docked'
                 );
                 editorBar.classList.remove('is-dragging');
-                editorBar.style.left = '';
-                editorBar.style.top = '';
-                editorBar.style.right = '';
-                editorBar.style.bottom = '';
-                editorBar.style.transform = '';
+                this.resetDesktopToolbarInlinePlacement(editorBar);
             }
             return;
         }
@@ -164,14 +163,80 @@ const App = {
         editorBar.classList.add(`toolbar-${selected}`);
         this.makeDesktopToolbarDraggable(editorBar);
 
-        if (selected !== 'floating') {
+        if (selected === 'floating') {
+            this.resetDesktopToolbarInlinePlacement(editorBar);
+        } else {
             editorBar.classList.remove('is-dragging');
-            editorBar.style.left = '';
-            editorBar.style.top = '';
-            editorBar.style.right = '';
-            editorBar.style.bottom = '';
-            editorBar.style.transform = '';
+            this.positionDockedDesktopToolbar(editorBar, selected);
         }
+    },
+
+    resetDesktopToolbarInlinePlacement(editorBar) {
+        if (!editorBar) return;
+        editorBar.style.left = '';
+        editorBar.style.top = '';
+        editorBar.style.right = '';
+        editorBar.style.bottom = '';
+        editorBar.style.transform = '';
+        editorBar.style.position = '';
+    },
+
+    positionDockedDesktopToolbar(editorBar, selectedPosition) {
+        if (!editorBar) return;
+        if (selectedPosition === 'top-docked') {
+            this.resetDesktopToolbarInlinePlacement(editorBar);
+            return;
+        }
+
+        const canvasContainer = document.getElementById('canvas-container');
+        const isMarkupVisible = this.mode === 'markup' && document.getElementById('markupView')?.classList.contains('active');
+        if (!canvasContainer || !isMarkupVisible) {
+            this.resetDesktopToolbarInlinePlacement(editorBar);
+            return;
+        }
+
+        const rect = canvasContainer.getBoundingClientRect();
+        if (rect.width <= 0 || rect.height <= 0) {
+            this.resetDesktopToolbarInlinePlacement(editorBar);
+            return;
+        }
+
+        const margin = 12;
+        const viewportPadding = 8;
+        const toolbarWidth = editorBar.offsetWidth;
+        const toolbarHeight = editorBar.offsetHeight;
+        let top = rect.top + margin;
+        let left = rect.left + margin;
+
+        if (selectedPosition === 'bottom-docked') {
+            top = rect.bottom - toolbarHeight - margin;
+            left = rect.left + (rect.width - toolbarWidth) / 2;
+        } else if (selectedPosition === 'left-docked') {
+            top = rect.top + (rect.height - toolbarHeight) / 2;
+            left = rect.left + margin;
+        } else if (selectedPosition === 'right-docked') {
+            top = rect.top + (rect.height - toolbarHeight) / 2;
+            left = rect.right - toolbarWidth - margin;
+        }
+
+        top = Math.max(viewportPadding, Math.min(top, window.innerHeight - toolbarHeight - viewportPadding));
+        left = Math.max(viewportPadding, Math.min(left, window.innerWidth - toolbarWidth - viewportPadding));
+
+        editorBar.style.position = 'fixed';
+        editorBar.style.top = `${Math.round(top)}px`;
+        editorBar.style.left = `${Math.round(left)}px`;
+        editorBar.style.right = 'auto';
+        editorBar.style.bottom = 'auto';
+        editorBar.style.transform = 'none';
+    },
+
+    repositionDockedDesktopToolbar() {
+        if (window.innerWidth <= 768) return;
+        const editorBar = document.getElementById('editorBar');
+        if (!editorBar) return;
+        const selected = Settings.get('editorToolbarPosition') || 'floating';
+        if (selected === 'floating') return;
+        this.positionDockedDesktopToolbar(editorBar, selected);
     },
 
     makeDesktopToolbarDraggable(el) {
@@ -552,8 +617,14 @@ const App = {
             btn.onclick = (e) => {
                 e.stopPropagation();
                 const isActive = menu.classList.contains('active');
-                document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('active'));
-                if (!isActive) menu.classList.add('active');
+                document.querySelectorAll('.dropdown-menu').forEach(m => {
+                    m.classList.remove('active');
+                    this.resetDropdownMenuPosition(m);
+                });
+                if (!isActive) {
+                    menu.classList.add('active');
+                    this.positionDropdownMenu(btn, menu);
+                }
             };
             // Prevent closure when clicking inside the menu
             menu.onclick = (e) => e.stopPropagation();
@@ -579,8 +650,76 @@ const App = {
         };
 
         window.onclick = () => {
-            document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('active'));
+            document.querySelectorAll('.dropdown-menu').forEach(m => {
+                m.classList.remove('active');
+                this.resetDropdownMenuPosition(m);
+            });
         };
+
+        window.addEventListener('resize', () => {
+            this.applyToolbarPosition();
+            this.repositionActiveDropdowns();
+        });
+        window.addEventListener('scroll', () => {
+            this.repositionDockedDesktopToolbar();
+            this.repositionActiveDropdowns();
+        }, true);
+    },
+
+    resetDropdownMenuPosition(menu) {
+        if (!menu) return;
+        menu.classList.remove('positioned', 'open-up', 'open-left');
+        menu.style.left = '';
+        menu.style.top = '';
+        menu.style.maxHeight = '';
+        menu.style.overflowY = '';
+    },
+
+    positionDropdownMenu(button, menu) {
+        if (!button || !menu) return;
+        const margin = 10;
+        this.resetDropdownMenuPosition(menu);
+        menu.classList.add('positioned');
+
+        const buttonRect = button.getBoundingClientRect();
+        const initialRect = menu.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - buttonRect.bottom - margin;
+        const spaceAbove = buttonRect.top - margin;
+        const shouldOpenUp = initialRect.height > spaceBelow && spaceAbove > spaceBelow;
+        if (shouldOpenUp) menu.classList.add('open-up');
+
+        const menuRect = menu.getBoundingClientRect();
+        let top = shouldOpenUp
+            ? buttonRect.top - menuRect.height - margin
+            : buttonRect.bottom + margin;
+        top = Math.max(margin, Math.min(top, window.innerHeight - menuRect.height - margin));
+
+        let left = buttonRect.right - menuRect.width;
+        if (left < margin && buttonRect.left + menuRect.width <= window.innerWidth - margin) {
+            menu.classList.add('open-left');
+            left = buttonRect.left;
+        }
+        left = Math.max(margin, Math.min(left, window.innerWidth - menuRect.width - margin));
+
+        menu.style.left = `${Math.round(left)}px`;
+        menu.style.top = `${Math.round(top)}px`;
+
+        const maxHeight = shouldOpenUp
+            ? Math.max(140, buttonRect.top - margin * 2)
+            : Math.max(140, window.innerHeight - buttonRect.bottom - margin * 2);
+        if (menuRect.height > maxHeight) {
+            menu.style.maxHeight = `${Math.floor(maxHeight)}px`;
+            menu.style.overflowY = 'auto';
+        }
+    },
+
+    repositionActiveDropdowns() {
+        document.querySelectorAll('.dropdown-menu.active').forEach(menu => {
+            const dropdown = menu.closest('.dropdown');
+            const button = dropdown ? dropdown.querySelector('button') : null;
+            if (!button) return;
+            this.positionDropdownMenu(button, menu);
+        });
     },
 
     setView(mode) {
