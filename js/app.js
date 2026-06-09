@@ -394,16 +394,21 @@ const App = {
                 return;
             }
             try {
-                const link = document.createElement('a');
-                link.href = 'ms-screenclip:';
-                link.style.display = 'none';
-                document.body.appendChild(link);
-                link.click();
-                link.remove();
-                Toast.show('Snipping Tool launch requested.');
+                window.location.assign('ms-screenclip:');
+                Toast.show('Snipping Tool launch requested. If it did not open, press Win + Shift + S.');
             } catch (err) {
-                console.error('Snipping Tool launch failed:', err);
-                Toast.show('Unable to launch Snipping Tool from this browser.', 'error');
+                try {
+                    const link = document.createElement('a');
+                    link.href = 'ms-screenclip:';
+                    link.style.display = 'none';
+                    document.body.appendChild(link);
+                    link.click();
+                    link.remove();
+                    Toast.show('Snipping Tool launch requested. If it did not open, press Win + Shift + S.');
+                } catch (fallbackErr) {
+                    console.error('Snipping Tool launch failed:', err, fallbackErr);
+                    Toast.show('Unable to launch Snipping Tool from this browser.', 'error');
+                }
             }
         };
         const snipBtn = document.getElementById('launchSnippingToolBtn');
