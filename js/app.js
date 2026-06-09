@@ -389,25 +389,29 @@ const App = {
         const launchSnippingTool = () => {
             const ua = String(navigator.userAgent || '');
             const isWindows = /Windows/i.test(ua) || /Win/i.test(String(navigator.platform || ''));
+            const snipProtocol = 'ms-screenclip:';
             const launchMsg = 'Snipping Tool launch requested. If it did not open, press Win + Shift + S.';
+            const launchViaAnchor = () => {
+                const link = document.createElement('a');
+                link.href = snipProtocol;
+                link.style.display = 'none';
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+            };
             if (!isWindows) {
                 Toast.show('Snipping Tool launcher is only available on Windows.', 'error');
                 return;
             }
             try {
-                window.location.assign('ms-screenclip:');
+                window.location.assign(snipProtocol);
                 Toast.show(launchMsg);
             } catch (err) {
                 try {
-                    const link = document.createElement('a');
-                    link.href = 'ms-screenclip:';
-                    link.style.display = 'none';
-                    document.body.appendChild(link);
-                    link.click();
-                    link.remove();
+                    launchViaAnchor();
                     Toast.show(launchMsg);
                 } catch (fallbackErr) {
-                    console.error('Snipping Tool launch failed (primary and fallback attempts):', { primaryError: err, fallbackError: fallbackErr });
+                    console.error('Snipping Tool launch failed. Verify protocol handler availability and browser external-protocol permissions.', err, fallbackErr);
                     Toast.show('Unable to launch Snipping Tool from this browser.', 'error');
                 }
             }
