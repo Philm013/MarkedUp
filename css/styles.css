@@ -1202,6 +1202,21 @@
 
         .editor-bar.toolbar-floating.is-dragging { cursor: grabbing; }
 
+        /* Shared docked appearance — removes the floating glass look */
+        .editor-bar.toolbar-top-docked,
+        .editor-bar.toolbar-bottom-docked,
+        .editor-bar.toolbar-left-docked,
+        .editor-bar.toolbar-right-docked {
+            background: var(--bg-panel);
+            backdrop-filter: none;
+            -webkit-backdrop-filter: none;
+            border-radius: 0;
+            border: none;
+            box-shadow: none;
+            flex-wrap: nowrap;
+        }
+
+        /* Top docked: lives inside header-right, blends into the top bar */
         .editor-bar.toolbar-top-docked {
             position: relative;
             top: auto;
@@ -1209,25 +1224,50 @@
             right: auto;
             bottom: auto;
             transform: none;
-            box-shadow: var(--shadow-md);
+            background: transparent;
+            padding: 0 var(--space-sm);
+            border-left: 1px solid var(--border);
+            margin-left: var(--space-xs);
+            gap: var(--space-xs);
         }
 
+        /* Bottom docked: horizontal strip at the bottom edge of the canvas */
         .editor-bar.toolbar-bottom-docked {
             position: fixed;
             z-index: 40;
-            box-shadow: var(--shadow-md);
+            flex-direction: row;
+            border-top: 1px solid var(--border);
+            padding: 6px var(--space-md);
         }
 
+        /* Left docked: vertical strip on the left edge of the canvas */
         .editor-bar.toolbar-left-docked {
             position: fixed;
             z-index: 40;
-            box-shadow: var(--shadow-md);
+            flex-direction: column;
+            border-right: 1px solid var(--border);
+            padding: var(--space-md) 6px;
         }
 
+        /* Right docked: vertical strip on the right edge of the canvas */
         .editor-bar.toolbar-right-docked {
             position: fixed;
             z-index: 40;
-            box-shadow: var(--shadow-md);
+            flex-direction: column;
+            border-left: 1px solid var(--border);
+            padding: var(--space-md) 6px;
+        }
+
+        /* Tool groups stack vertically in left / right docked mode */
+        .editor-bar.toolbar-left-docked .tool-group,
+        .editor-bar.toolbar-right-docked .tool-group {
+            flex-direction: column;
+        }
+
+        /* Hide text labels for compact vertical side-docked toolbar */
+        .editor-bar.toolbar-left-docked .action-label,
+        .editor-bar.toolbar-right-docked .action-label {
+            display: none;
         }
         
         .tool-group {

@@ -217,14 +217,17 @@ const App = {
         let left = rect.left + margin;
 
         if (selectedPosition === 'bottom-docked') {
-            top = rect.bottom - toolbarHeight - margin;
+            // Flush against the bottom edge of the canvas, horizontally centered
+            top = rect.bottom - toolbarHeight;
             left = rect.left + (rect.width - toolbarWidth) / 2;
         } else if (selectedPosition === 'left-docked') {
+            // Flush against the left edge of the canvas, vertically centered
             top = rect.top + (rect.height - toolbarHeight) / 2;
-            left = rect.left + margin;
+            left = rect.left;
         } else if (selectedPosition === 'right-docked') {
+            // Flush against the right edge of the canvas, vertically centered
             top = rect.top + (rect.height - toolbarHeight) / 2;
-            left = rect.right - toolbarWidth - margin;
+            left = rect.right - toolbarWidth;
         }
 
         top = Math.max(viewportPadding, Math.min(top, window.innerHeight - toolbarHeight - viewportPadding));
