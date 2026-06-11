@@ -57,6 +57,7 @@ const PDFViewer = {
             const thumb = await this.renderPageThumb(pageNum, 110);
 
             const card = document.createElement('div');
+            card.dataset.pageCard = pageNum;
             card.style.cssText = `
                 cursor:pointer; border-radius:8px; overflow:hidden;
                 border:2px solid var(--border); position:relative;
@@ -78,6 +79,7 @@ const PDFViewer = {
             `;
 
             const check = document.createElement('div');
+            check.className = 'pdf-page-check';
             check.style.cssText = `
                 position:absolute; top:5px; right:5px;
                 width:20px; height:20px; border-radius:50%;
@@ -113,21 +115,21 @@ const PDFViewer = {
 
         // Select All / None buttons
         document.getElementById('pdfSelectAllPages').onclick = () => {
-            grid.querySelectorAll('div[title]').forEach((card, idx) => {
-                const pageNum = idx + 1;
+            grid.querySelectorAll('[data-page-card]').forEach(card => {
+                const pageNum = parseInt(card.dataset.pageCard, 10);
                 selectedPages.add(pageNum);
                 card.style.borderColor = 'var(--accent, #6c63ff)';
                 card.style.boxShadow = '0 0 0 2px var(--accent, #6c63ff)';
-                card.querySelector('div[style*="position:absolute"]').style.display = 'flex';
+                card.querySelector('.pdf-page-check').style.display = 'flex';
             });
             updateCount();
         };
 
         document.getElementById('pdfSelectNonePages').onclick = () => {
-            grid.querySelectorAll('div[title]').forEach(card => {
+            grid.querySelectorAll('[data-page-card]').forEach(card => {
                 card.style.borderColor = 'var(--border)';
                 card.style.boxShadow = '';
-                card.querySelector('div[style*="position:absolute"]').style.display = 'none';
+                card.querySelector('.pdf-page-check').style.display = 'none';
             });
             selectedPages.clear();
             updateCount();
