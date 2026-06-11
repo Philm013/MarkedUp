@@ -462,6 +462,7 @@
                         <select id="settingDefaultView">
                             <option value="library">📂 Library (Home)</option>
                             <option value="markup">🎨 Markup (Canvas)</option>
+                            <option value="restore">🔄 Restore Last Session</option>
                         </select>
                     </div>
                 </div>
@@ -612,6 +613,34 @@
         <div class="modal-actions">
             <button class="btn btn-default" id="pdfCancelBtn">Cancel</button>
             <button class="btn btn-primary" id="pdfLoadBtn">Load PDF</button>
+        </div>
+    </div>
+</div>
+
+<!-- PDF Page Selection Modal -->
+<div class="modal-overlay" id="pdfPageModal" role="dialog" aria-modal="true" aria-labelledby="pdfPageModalTitle">
+    <div class="modal" tabindex="-1" style="max-width:700px; width:95vw;">
+        <h3 id="pdfPageModalTitle">📄 Select Pages to Import</h3>
+        <p id="pdfPageModalDesc">Choose which pages to import for markup. Click a page to toggle selection.</p>
+
+        <div style="display:flex; gap:8px; align-items:center; margin-bottom:12px; flex-wrap:wrap;">
+            <button class="btn btn-default btn-sm" id="pdfSelectAllPages">Select All</button>
+            <button class="btn btn-default btn-sm" id="pdfSelectNonePages">Select None</button>
+            <span id="pdfPageSelectionCount" style="font-size:12px; color:var(--text-dim); margin-left:4px;"></span>
+        </div>
+
+        <div id="pdfPageGrid" style="
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 10px;
+            max-height: 55vh;
+            overflow-y: auto;
+            padding: 4px 2px;
+        "></div>
+
+        <div class="modal-actions" style="margin-top:16px;">
+            <button class="btn btn-default" id="pdfPageCancelBtn">Cancel</button>
+            <button class="btn btn-primary" id="pdfPageImportBtn">Import Selected</button>
         </div>
     </div>
 </div>

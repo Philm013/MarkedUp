@@ -194,6 +194,7 @@ const Library = {
             App.setView('markup');
             Editor.load(capture);
             this.activeCaptureId = id;
+            Settings.set('lastOpenCaptureId', id);
             this.render();
         } catch (e) {
             console.error('Library: Load failed', e);

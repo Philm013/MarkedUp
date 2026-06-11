@@ -15,7 +15,8 @@ const Settings = {
         pinchSensitivity: 1.0,
         mobileToolbarPosition: 'bottom', // 'top', 'bottom', 'floating'
         editorToolbarPosition: 'floating', // 'floating' | 'top-docked' | 'bottom-docked' | 'left-docked' | 'right-docked'
-        defaultView: 'markup', // 'library' or 'markup'
+        defaultView: 'markup', // 'library', 'markup', or 'restore'
+        lastOpenCaptureId: null, // capture ID to restore when defaultView === 'restore'
         favorites: [] // List of favorite asset objects
     },
     

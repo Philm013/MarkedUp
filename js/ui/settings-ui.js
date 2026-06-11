@@ -115,7 +115,7 @@ const SettingsUI = {
         document.getElementById('settingMobileToolbarPosition').value = settings.mobileToolbarPosition || 'bottom';
         const toolbarPosition = settings.editorToolbarPosition || 'floating';
         document.getElementById('settingEditorToolbarPosition').value = toolbarPosition;
-        const defaultView = settings.defaultView === 'library' ? 'library' : 'markup';
+        const defaultView = ['library', 'markup', 'restore'].includes(settings.defaultView) ? settings.defaultView : 'markup';
         document.getElementById('settingDefaultView').value = defaultView;
         
         this.updateSettingsVisibility();

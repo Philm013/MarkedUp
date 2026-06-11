@@ -21,7 +21,17 @@ const App = {
         this.applyToolbarPosition();
         
         const defaultView = Settings.get('defaultView');
-        this.setView(defaultView === 'library' ? 'library' : 'markup');
+        if (defaultView === 'restore') {
+            const lastId = Settings.get('lastOpenCaptureId');
+            const lastCapture = lastId && Library.captures.find(c => c.id === lastId);
+            if (lastCapture) {
+                await Library.loadCapture(lastId);
+            } else {
+                this.setView('markup');
+            }
+        } else {
+            this.setView(defaultView === 'library' ? 'library' : 'markup');
+        }
         
         window.addEventListener('paste', async e => {
             const item = Array.from(e.clipboardData.items).find(i => i.type.startsWith('image/'));
