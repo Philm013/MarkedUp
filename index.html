@@ -134,7 +134,7 @@
 
                 <div class="mobile-header-primary-actions">
                     <button class="btn btn-default btn-sm mobile-quick-action" id="pasteCaptureBtnMobile" type="button" title="Paste from Clipboard" aria-label="Paste image from clipboard">
-                        <span class="iconify" data-icon="mdi:clipboard-outline"></span><span class="action-label">Paste</span>
+                        <span class="iconify" data-icon="mdi:clipboard-outline" aria-hidden="true"></span><span class="action-label">Paste</span>
                     </button>
                     <button class="tool-btn mobile-header-btn" id="mobileToolsBtn" type="button" title="Open Tool Tray" aria-label="Open drawing tools" aria-controls="mobileActionTray" aria-expanded="false">
                         <span class="iconify" data-icon="mdi:toolbox-outline" aria-hidden="true"></span>
@@ -146,7 +146,7 @@
                 </div>
 
                 <div id="mobileHeaderControls">
-                    <div id="mobHeaderMarkup" style="display:none;" role="toolbar" aria-label="Markup quick controls">
+                    <div id="mobHeaderMarkup" style="display:none;" role="group" aria-label="Markup quick controls">
                         <div class="mobile-tool-cluster" role="group" aria-label="History">
                             <button class="tool-btn" id="undoBtnMobHeader" type="button" title="Undo" aria-label="Undo"><span class="iconify" data-icon="mdi:undo-variant"></span></button>
                             <button class="tool-btn" id="redoBtnMobHeader" type="button" title="Redo" aria-label="Redo"><span class="iconify" data-icon="mdi:redo-variant"></span></button>
@@ -296,7 +296,7 @@
 
         <!-- Consolidated Bottom Tray for Mobile -->
         <div class="tray-overlay" id="trayOverlay"></div>
-        <div class="bottom-tray hidden-desktop" id="mobileActionTray">
+        <div class="bottom-tray hidden-desktop" id="mobileActionTray" aria-hidden="true" inert>
             <div class="tray-handle"></div>
             <div class="tray-content">
                 <div class="tray-section">

@@ -98,7 +98,7 @@ const App = {
         const overlay = document.getElementById('trayOverlay');
         if (tray) tray.classList.add('open');
         if (overlay) overlay.classList.add('active');
-        this.updateTrayToggleAccessibility(true);
+        this.updateTrayAccessibility(true);
     },
 
     closeTray() {
@@ -106,10 +106,19 @@ const App = {
         const overlay = document.getElementById('trayOverlay');
         if (tray) tray.classList.remove('open');
         if (overlay) overlay.classList.remove('active');
-        this.updateTrayToggleAccessibility(false);
+        this.updateTrayAccessibility(false);
     },
 
-    updateTrayToggleAccessibility(isOpen) {
+    updateTrayAccessibility(isOpen) {
+        const tray = document.getElementById('mobileActionTray');
+        if (tray) {
+            tray.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
+            if (isOpen) {
+                tray.removeAttribute('inert');
+            } else {
+                tray.setAttribute('inert', '');
+            }
+        }
         document.querySelectorAll('[aria-controls="mobileActionTray"]').forEach((btn) => {
             btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
         });
@@ -815,11 +824,19 @@ const App = {
             const navMarkup = document.getElementById('navMarkup');
             if (navLibrary) {
                 navLibrary.classList.toggle('active', normalizedMode === 'library');
-                navLibrary.setAttribute('aria-current', normalizedMode === 'library' ? 'page' : 'false');
+                if (normalizedMode === 'library') {
+                    navLibrary.setAttribute('aria-current', 'page');
+                } else {
+                    navLibrary.removeAttribute('aria-current');
+                }
             }
             if (navMarkup) {
                 navMarkup.classList.toggle('active', normalizedMode === 'markup');
-                navMarkup.setAttribute('aria-current', normalizedMode === 'markup' ? 'page' : 'false');
+                if (normalizedMode === 'markup') {
+                    navMarkup.setAttribute('aria-current', 'page');
+                } else {
+                    navMarkup.removeAttribute('aria-current');
+                }
             }
         }
 
