@@ -8,6 +8,7 @@ const App = {
         viewportPadding: 8,
         minDropdownHeight: 140
     },
+    escapeListenerBound: false,
 
     async init() {
         Settings.init();
@@ -15,6 +16,7 @@ const App = {
         Editor.init();
         SettingsUI.init();
         Notes.init();
+        this.bindGlobalAccessibilityShortcuts();
         
         this.setupEventListeners();
         this.renderMobileEditorTools();
@@ -35,6 +37,16 @@ const App = {
                 reader.readAsDataURL(blob);
             }
         });
+    },
+
+    bindGlobalAccessibilityShortcuts() {
+        if (this.escapeListenerBound) return;
+        window.addEventListener('keydown', (e) => {
+            if (e.key !== 'Escape') return;
+            const tray = document.getElementById('mobileActionTray');
+            if (tray?.classList.contains('open')) this.closeTray();
+        });
+        this.escapeListenerBound = true;
     },
 
     renderMobileEditorTools() {
@@ -82,13 +94,25 @@ const App = {
     },
 
     openTray() {
-        document.getElementById('mobileActionTray').classList.add('open');
-        document.getElementById('trayOverlay').classList.add('active');
+        const tray = document.getElementById('mobileActionTray');
+        const overlay = document.getElementById('trayOverlay');
+        if (tray) tray.classList.add('open');
+        if (overlay) overlay.classList.add('active');
+        this.updateTrayToggleAccessibility(true);
     },
 
     closeTray() {
-        document.getElementById('mobileActionTray').classList.remove('open');
-        document.getElementById('trayOverlay').classList.remove('active');
+        const tray = document.getElementById('mobileActionTray');
+        const overlay = document.getElementById('trayOverlay');
+        if (tray) tray.classList.remove('open');
+        if (overlay) overlay.classList.remove('active');
+        this.updateTrayToggleAccessibility(false);
+    },
+
+    updateTrayToggleAccessibility(isOpen) {
+        document.querySelectorAll('[aria-controls="mobileActionTray"]').forEach((btn) => {
+            btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        });
     },
 
     applyToolbarPosition() {
@@ -448,8 +472,13 @@ const App = {
         if (handMobH) handMobH.onclick = () => Editor.setTool('hand');
 
         // Tray Logic
-        document.getElementById('mobileDrawingTrigger').onclick = () => this.openTray();
-        document.getElementById('trayOverlay').onclick = () => this.closeTray();
+        const openTray = () => this.openTray();
+        const trayTrigger = document.getElementById('mobileDrawingTrigger');
+        if (trayTrigger) trayTrigger.onclick = openTray;
+        const mobileToolsBtn = document.getElementById('mobileToolsBtn');
+        if (mobileToolsBtn) mobileToolsBtn.onclick = openTray;
+        const trayOverlay = document.getElementById('trayOverlay');
+        if (trayOverlay) trayOverlay.onclick = () => this.closeTray();
         document.getElementById('assetsBtnTray').onclick = () => {
             this.closeTray();
             document.getElementById('sidebar').classList.add('open');
@@ -544,8 +573,10 @@ const App = {
             }
         };
 
-        const pasteBtn = document.getElementById('pasteCaptureBtn');
-        if (pasteBtn) pasteBtn.onclick = doPaste;
+        ['pasteCaptureBtn', 'pasteCaptureBtnMobile'].forEach((id) => {
+            const pasteBtn = document.getElementById(id);
+            if (pasteBtn) pasteBtn.onclick = doPaste;
+        });
 
         // Upload Screenshot Logic
         const uploadInput = document.getElementById('screenshotUploadInput');
@@ -585,7 +616,15 @@ const App = {
         document.getElementById('layersBtn').onclick = layers;
 
         // Dialogs
-        document.getElementById('settingsBtn').onclick = () => { SettingsUI.loadToUI(); Modal.open('settingsModal'); };
+        const openSettings = () => {
+            SettingsUI.loadToUI();
+            Modal.open('settingsModal');
+        };
+        document.getElementById('settingsBtn').onclick = openSettings;
+        const mobileSettingsBtn = document.getElementById('mobileSettingsBtn');
+        if (mobileSettingsBtn) {
+            mobileSettingsBtn.onclick = openSettings;
+        }
         document.getElementById('settingsCancelBtn').onclick = () => Modal.close('settingsModal');
         document.getElementById('settingsSaveBtn').onclick = () => SettingsUI.save();
         
@@ -772,8 +811,16 @@ const App = {
         const mobNav = document.getElementById('mobileNav');
         if (mobNav) {
             mobNav.style.display = isMob ? 'flex' : 'none';
-            document.getElementById('navLibrary').classList.toggle('active', normalizedMode === 'library');
-            document.getElementById('navMarkup').classList.toggle('active', normalizedMode === 'markup');
+            const navLibrary = document.getElementById('navLibrary');
+            const navMarkup = document.getElementById('navMarkup');
+            if (navLibrary) {
+                navLibrary.classList.toggle('active', normalizedMode === 'library');
+                navLibrary.setAttribute('aria-current', normalizedMode === 'library' ? 'page' : 'false');
+            }
+            if (navMarkup) {
+                navMarkup.classList.toggle('active', normalizedMode === 'markup');
+                navMarkup.setAttribute('aria-current', normalizedMode === 'markup' ? 'page' : 'false');
+            }
         }
 
         // Sidebar cleanup
@@ -787,6 +834,7 @@ const App = {
         if (isMob) {
             if (mobHeaderMarkup) mobHeaderMarkup.style.display = (normalizedMode === 'markup') ? 'flex' : 'none';
             if (mobTrigger) mobTrigger.style.display = (normalizedMode === 'markup') ? 'flex' : 'none';
+            if (mobHeaderMarkup) mobHeaderMarkup.setAttribute('aria-hidden', normalizedMode === 'markup' ? 'false' : 'true');
         } else {
             if (mobTrigger) mobTrigger.style.display = 'none';
         }
