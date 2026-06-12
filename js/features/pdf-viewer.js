@@ -1,7 +1,8 @@
 const PDFViewer = {
+    defaultName: 'PDF Capture',
     pdfDoc: null,
     pdfData: null,
-    pdfName: 'PDF Capture',
+    pdfName: '',
     preparedSourceKey: null,
     selectionMode: 'all',
     
@@ -218,7 +219,7 @@ const PDFViewer = {
     invalidatePreparedDocument() {
         this.pdfDoc = null;
         this.pdfData = null;
-        this.pdfName = 'PDF Capture';
+        this.pdfName = this.defaultName;
         this.preparedSourceKey = null;
         this.selectionMode = 'all';
 
@@ -270,18 +271,19 @@ const PDFViewer = {
     },
 
     getPdfName(url, file) {
-        const rawName = file?.name
-            || (() => {
-                try {
-                    const pathname = new URL(url).pathname;
-                    return decodeURIComponent(pathname.split('/').pop() || '');
-                } catch (_error) {
-                    return '';
-                }
-            })();
+        const rawName = file?.name || this.extractNameFromUrl(url);
 
         const cleanName = String(rawName || '').replace(/\.pdf$/i, '').trim();
-        return cleanName || 'PDF Capture';
+        return cleanName || this.defaultName;
+    },
+
+    extractNameFromUrl(url) {
+        try {
+            const pathname = new URL(url).pathname;
+            return decodeURIComponent(pathname.split('/').pop() || '');
+        } catch (_error) {
+            return '';
+        }
     },
 
     base64ToUint8Array(base64) {
