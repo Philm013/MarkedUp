@@ -25,9 +25,9 @@ const PDFViewer = {
     },
 
     async loadFromUrl(url) {
-        const cleanUrl = String(url || '').trim();
+        const cleanUrl = typeof url === 'string' ? url.trim() : '';
         if (!cleanUrl) {
-            throw new Error('Provide a valid PDF URL');
+            throw new Error('PDF URL must be a non-empty string');
         }
 
         await this.prepareSource({ url: cleanUrl, file: null });
@@ -36,7 +36,7 @@ const PDFViewer = {
 
     async loadFromFile(file) {
         if (!file) {
-            throw new Error('Select a PDF file');
+            throw new Error('PDF file parameter is required');
         }
 
         await this.prepareSource({ url: '', file });
