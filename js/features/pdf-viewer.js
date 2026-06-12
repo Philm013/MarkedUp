@@ -25,7 +25,11 @@ const PDFViewer = {
     },
 
     async loadFromUrl(url) {
-        const cleanUrl = typeof url === 'string' ? url.trim() : '';
+        if (typeof url !== 'string') {
+            throw new Error('PDF URL must be a string');
+        }
+
+        const cleanUrl = url.trim();
         if (!cleanUrl) {
             throw new Error('PDF URL must be provided as a non-empty string');
         }
@@ -35,7 +39,8 @@ const PDFViewer = {
     },
 
     async loadFromFile(file) {
-        if (!file) {
+        const isBlobLike = typeof Blob !== 'undefined' && file instanceof Blob;
+        if (!file || !isBlobLike) {
             throw new Error('PDF file parameter is required');
         }
 
