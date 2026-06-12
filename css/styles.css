@@ -10,6 +10,7 @@
             --accent: #000000;
             --accent-hover: #1a1a1a;
             --accent-dim: rgba(0, 0, 0, 0.08);
+            --accent-contrast: #ffffff;
             --success: #10b981;
             --warning: #f59e0b;
             --danger: #ef4444;
@@ -324,7 +325,7 @@
             width: 24px;
             height: 24px;
             background: var(--accent);
-            color: white;
+            color: var(--accent-contrast);
             border-radius: var(--radius-full);
             display: flex;
             align-items: center;
@@ -403,6 +404,7 @@
             --accent: #ffffff;
             --accent-hover: #eeeeee;
             --accent-dim: rgba(255, 255, 255, 0.1);
+            --accent-contrast: #000000;
             --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.4);
             --text: #ffffff;
             --text-muted: rgba(255, 255, 255, 0.55);
@@ -411,6 +413,7 @@
             width: clamp(280px, 35vw, 340px);
             min-width: clamp(280px, 35vw, 340px);
             background: var(--bg-panel);
+            color: var(--text);
             border-right: 1px solid rgba(0, 0, 0, 0.12);
             display: flex;
             flex-direction: column;
@@ -607,7 +610,7 @@
             color: var(--text-muted); cursor: pointer; font-size: 16px;
         }
         .btn-icon:hover { background: var(--bg-hover); color: var(--text); }
-        .btn-icon.active { background: var(--accent); color: white; }
+        .btn-icon.active { background: var(--accent); color: var(--accent-contrast); }
 
         /* Simplified Card for Library */
         .session-card.landing-card {
@@ -928,7 +931,7 @@
         }
         
         .chip:hover { border-color: var(--border-dim); color: var(--text); background: var(--bg-elevated); }
-        .chip.active { background: var(--accent); border-color: var(--accent); color: white; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25); }
+        .chip.active { background: var(--accent); border-color: var(--accent); color: var(--accent-contrast); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25); }
         
         .main {
             flex: 1;
@@ -1007,7 +1010,7 @@
         .view-btn:hover { color: var(--text); background: rgba(0,0,0,0.04); }
         .view-btn.active {
             background: var(--accent);
-            color: white;
+            color: var(--accent-contrast);
             box-shadow: var(--shadow-sm);
         }
         
@@ -1149,7 +1152,7 @@
         .btn-default { background: var(--bg-surface); color: var(--text); border-color: var(--border); }
         .btn-default:hover { background: var(--bg-elevated); }
         
-        .btn-primary { background: var(--accent); color: white; }
+        .btn-primary { background: var(--accent); color: var(--accent-contrast); }
         .btn-primary:hover { background: var(--accent-hover); transform: translateY(-1px); }
 
         /* Sidebar uses white accent; keep primary buttons legible there. */
@@ -1356,7 +1359,7 @@
         
         .tool-btn.active { 
             background: var(--accent); 
-            color: white;
+            color: var(--accent-contrast);
             border-color: var(--accent);
             box-shadow: 0 4px 12px var(--accent-dim);
         }
@@ -2010,6 +2013,62 @@
             box-shadow: 0 0 0 2px var(--accent-dim);
             background: var(--bg-surface);
         }
+
+        .form-help {
+            margin-top: var(--space-sm);
+            font-size: 12px;
+            color: var(--text-dim);
+            line-height: 1.5;
+        }
+
+        .form-help[data-state="error"] {
+            color: var(--danger);
+        }
+
+        .form-help[data-state="valid"] {
+            color: var(--text-muted);
+        }
+
+        .pdf-selection-panel {
+            margin-top: var(--space-xl);
+            padding: var(--space-lg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-xl);
+            background: var(--bg-surface);
+        }
+
+        .pdf-selection-summary {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: var(--space-md);
+            margin-bottom: var(--space-md);
+        }
+
+        .pdf-selection-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .pdf-selection-note,
+        .pdf-selection-file {
+            font-size: 12px;
+            color: var(--text-dim);
+        }
+
+        .pdf-selection-file {
+            font-weight: 600;
+            text-align: right;
+            word-break: break-word;
+        }
+
+        .pdf-selection-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-sm);
+            margin-bottom: var(--space-md);
+        }
         
         .toggle-row {
             display: flex;
@@ -2084,6 +2143,12 @@
             left: 0;
             right: 0;
             height: 64px;
+            --accent: #ffffff;
+            --accent-hover: #f2f2f2;
+            --accent-dim: rgba(255, 255, 255, 0.12);
+            --accent-contrast: #000000;
+            --text-muted: rgba(255, 255, 255, 0.78);
+            --text-dim: rgba(255, 255, 255, 0.56);
             background: rgba(0, 0, 0, 0.94);
             backdrop-filter: blur(20px);
             border-top: 1px solid var(--border);
@@ -2126,7 +2191,7 @@
             width: 56px;
             height: 56px;
             background: var(--accent);
-            color: white;
+            color: var(--accent-contrast);
             border: none;
             border-radius: var(--radius-full);
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);

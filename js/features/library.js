@@ -149,7 +149,8 @@ const Library = {
         );
     },
 
-    async addCapture(img, title = 'Capture', pdfData = null) {
+    async addCapture(img, title = 'Capture', pdfData = null, options = {}) {
+        const { activate = true, render = true } = options;
         const thumbData = await this.generateThumb(img);
         const capture = {
             id: Utils.uid(),
@@ -167,9 +168,14 @@ const Library = {
         };
         
         await DB.save(DB.STORES.CAPTURES, capture);
-        this.captures.unshift({ ...capture, img, loaded: true, selected: false });
-        this.render();
-        this.loadCapture(capture.id);
+        const storedCapture = { ...capture, img, loaded: true, selected: false };
+        this.captures.unshift(storedCapture);
+        if (activate) {
+            await this.loadCapture(capture.id);
+        } else if (render) {
+            this.render();
+        }
+        return storedCapture;
     },
 
     async generateThumb(img) {
