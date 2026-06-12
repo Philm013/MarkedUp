@@ -39,9 +39,9 @@ const PDFViewer = {
     },
 
     async loadFromFile(file) {
-        const isBlobLike = typeof Blob !== 'undefined' && file instanceof Blob;
+        const isBlobLike = file instanceof Blob;
         if (!file || !isBlobLike) {
-            throw new Error('PDF file parameter is required');
+            throw new Error('PDF file must be a valid Blob or File object');
         }
 
         await this.prepareSource({ url: '', file });
