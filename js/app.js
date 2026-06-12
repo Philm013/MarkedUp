@@ -511,7 +511,10 @@ const App = {
         document.getElementById('landingNewBtn').onclick = () => this.startNew();
         document.getElementById('landingExportBtn').onclick = () => this.exportMultipleSessions();
         
-        const openPdf = () => Modal.open('pdfModal');
+        const openPdf = () => {
+            PDFViewer.resetModalState();
+            Modal.open('pdfModal');
+        };
         const pdfBtn = document.getElementById('pdfOpenBtn');
         if (pdfBtn) pdfBtn.onclick = openPdf;
 
@@ -710,16 +713,29 @@ const App = {
         setupDropdown('assetToolsBtn', 'assetToolsMenu');
 
         // PDF Modal Actions
-        document.getElementById('pdfCancelBtn').onclick = () => Modal.close('pdfModal');
-        document.getElementById('pdfLoadBtn').onclick = () => {
+        document.getElementById('pdfCancelBtn').onclick = () => {
+            PDFViewer.resetModalState();
+            Modal.close('pdfModal');
+        };
+        document.getElementById('pdfUrlInput').addEventListener('input', () => PDFViewer.invalidatePreparedDocument());
+        document.getElementById('pdfFileInput').addEventListener('change', () => PDFViewer.invalidatePreparedDocument());
+        document.querySelectorAll('[data-pdf-page-mode]').forEach(btn => {
+            btn.onclick = () => PDFViewer.setSelectionMode(btn.dataset.pdfPageMode);
+        });
+        document.getElementById('pdfPageRangeInput').addEventListener('input', () => PDFViewer.updateCustomSelectionPreview());
+        document.getElementById('pdfLoadBtn').onclick = async () => {
             const url = document.getElementById('pdfUrlInput').value.trim();
             const file = document.getElementById('pdfFileInput').files[0];
-            if (url) {
-                PDFViewer.loadFromUrl(url);
-            } else if (file) {
-                PDFViewer.loadFromFile(file);
-            } else {
+            if (!url && !file) {
                 Toast.show('Please provide a URL or select a file', 'error');
+                return;
+            }
+
+            try {
+                await PDFViewer.handlePrimaryAction({ url, file });
+            } catch (e) {
+                console.error('PDF Import Error:', e);
+                Toast.show(e.message || 'Failed to import PDF', 'error');
             }
         };
 

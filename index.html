@@ -31,7 +31,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://code.iconify.design/3/3.1.1/iconify.min.js"></script>
 
-    <link rel="stylesheet" href="css/styles.css?v=1.2">
+    <link rel="stylesheet" href="css/styles.css?v=1.3">
 </head>
 <body>
 
@@ -616,7 +616,7 @@
 <div class="modal-overlay" id="pdfModal" role="dialog" aria-modal="true" aria-labelledby="pdfModalTitle">
     <div class="modal" tabindex="-1">
         <h3 id="pdfModalTitle">📄 Load PDF</h3>
-        <p>Load a PDF from a URL or upload a file from your device.</p>
+        <p>Load a PDF from a URL or upload a file from your device, then choose which pages to import.</p>
         
         <div class="form-group">
             <label>PDF URL</label>
@@ -629,10 +629,32 @@
             <label>Upload File</label>
             <input type="file" id="pdfFileInput" accept="application/pdf">
         </div>
+
+        <div class="pdf-selection-panel" id="pdfSelectionPanel" hidden>
+            <div class="pdf-selection-summary">
+                <div>
+                    <div class="pdf-selection-title">Choose pages to import</div>
+                    <div class="pdf-selection-note" id="pdfPageCount"></div>
+                </div>
+                <div class="pdf-selection-file" id="pdfFileSummary"></div>
+            </div>
+
+            <div class="pdf-selection-actions" role="group" aria-label="PDF page selection mode">
+                <button type="button" class="chip active" data-pdf-page-mode="all" aria-pressed="true">All pages</button>
+                <button type="button" class="chip" data-pdf-page-mode="custom" aria-pressed="false">Custom range</button>
+            </div>
+
+            <div class="form-group" id="pdfCustomPagesGroup" hidden>
+                <label for="pdfPageRangeInput">Page ranges</label>
+                <input type="text" id="pdfPageRangeInput" placeholder="e.g. 1-3, 5, 8-10" disabled>
+            </div>
+
+            <div class="form-help" id="pdfPageRangeStatus" aria-live="polite"></div>
+        </div>
         
         <div class="modal-actions">
             <button class="btn btn-default" id="pdfCancelBtn">Cancel</button>
-            <button class="btn btn-primary" id="pdfLoadBtn">Load PDF</button>
+            <button class="btn btn-primary" id="pdfLoadBtn">Review Pages</button>
         </div>
     </div>
 </div>
@@ -692,12 +714,12 @@
 <script src="js/assets/emojis.js"></script>
 <script src="js/assets/stock.js"></script>
 <script src="js/features/library.js"></script>
-<script src="js/features/pdf-viewer.js"></script>
+<script src="js/features/pdf-viewer.js?v=1.3"></script>
 <script src="js/features/notes.js"></script>
 <script src="js/editor/editor.js?v=1.2"></script>
 <script src="js/editor/exporter.js"></script>
 <script src="js/ui/settings-ui.js?v=1.2"></script>
-<script src="js/app.js?v=1.2"></script>
+<script src="js/app.js?v=1.3"></script>
 <script src="js/main.js"></script>
 <script>
     if ('serviceWorker' in navigator) {

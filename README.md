@@ -27,7 +27,7 @@ Main-branch commits are now automatically mirrored to the `gh-pages` branch via 
 - Use `captureMode = auto` to try live iframe capture first, then fall back to the Node/Playwright service
 - Force `live` or `node` capture mode from settings when needed
 - Paste images directly from the clipboard
-- Import PDFs from a URL or local file and convert the first page into a capture
+- Import PDFs from a URL or local file, choose which pages to bring in, and convert each selected page into a capture
 
 ### Markup and Review
 
@@ -191,7 +191,6 @@ MarkedUp/
 - Documentation had drifted from the implementation; this file now reflects the current tool behavior.
 - The app depends on browser APIs, CDN assets, and local IndexedDB, so behavior can vary across environments.
 - Some external sites may still behave poorly inside a proxied iframe even after header stripping.
-- PDF import currently turns the first rendered page into a capture rather than exposing a full document workflow.
 - The project does not currently define lint, test, or build commands beyond starting the server.
 
 ## Suggested Next Documentation Targets
