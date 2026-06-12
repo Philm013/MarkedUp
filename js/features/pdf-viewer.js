@@ -24,6 +24,25 @@ const PDFViewer = {
         await this.importSelectedPages();
     },
 
+    async loadFromUrl(url) {
+        const cleanUrl = String(url || '').trim();
+        if (!cleanUrl) {
+            throw new Error('Provide a valid PDF URL');
+        }
+
+        await this.prepareSource({ url: cleanUrl, file: null });
+        await this.importSelectedPages();
+    },
+
+    async loadFromFile(file) {
+        if (!file) {
+            throw new Error('Select a PDF file');
+        }
+
+        await this.prepareSource({ url: '', file });
+        await this.importSelectedPages();
+    },
+
     async prepareSource({ url, file }) {
         const sourceKey = this.getSourceKey(url, file);
         const fromUrl = Boolean(url);
