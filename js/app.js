@@ -8,6 +8,8 @@ const App = {
         viewportPadding: 8,
         minDropdownHeight: 140
     },
+    trayToggleButtonIds: ['mobileDrawingTrigger', 'mobileToolsBtn'],
+    escapeListenerBound: false,
 
     async init() {
         Settings.init();
@@ -98,7 +100,7 @@ const App = {
     },
 
     updateTrayToggleAccessibility(isOpen) {
-        ['mobileDrawingTrigger', 'mobileToolsBtn'].forEach((id) => {
+        this.trayToggleButtonIds.forEach((id) => {
             const btn = document.getElementById(id);
             if (btn) btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
         });
@@ -606,6 +608,10 @@ const App = {
 
         // Dialogs
         document.getElementById('settingsBtn').onclick = () => { SettingsUI.loadToUI(); Modal.open('settingsModal'); };
+        const mobileSettingsBtn = document.getElementById('mobileSettingsBtn');
+        if (mobileSettingsBtn) {
+            mobileSettingsBtn.onclick = () => document.getElementById('settingsBtn').click();
+        }
         document.getElementById('settingsCancelBtn').onclick = () => Modal.close('settingsModal');
         document.getElementById('settingsSaveBtn').onclick = () => SettingsUI.save();
         
@@ -711,9 +717,14 @@ const App = {
             });
         };
 
-        window.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') this.closeTray();
-        });
+        if (!this.escapeListenerBound) {
+            window.addEventListener('keydown', (e) => {
+                if (e.key !== 'Escape') return;
+                const tray = document.getElementById('mobileActionTray');
+                if (tray?.classList.contains('open')) this.closeTray();
+            });
+            this.escapeListenerBound = true;
+        }
 
         if (!this.layoutListenersBound) {
             window.addEventListener('resize', () => {
