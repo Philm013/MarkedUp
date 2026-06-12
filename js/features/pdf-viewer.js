@@ -27,10 +27,10 @@ const PDFViewer = {
     async loadFromUrl(url) {
         const cleanUrl = typeof url === 'string' ? url.trim() : '';
         if (!cleanUrl) {
-            throw new Error('PDF URL must be a non-empty string');
+            throw new Error('PDF URL must be provided as a non-empty string');
         }
 
-        await this.prepareSource({ url: cleanUrl, file: null });
+        await this.prepareSource({ url: cleanUrl });
         await this.importSelectedPages();
     },
 
