@@ -24,6 +24,30 @@ const PDFViewer = {
         await this.importSelectedPages();
     },
 
+    async loadFromUrl(url) {
+        if (typeof url !== 'string') {
+            throw new Error('PDF URL must be a string');
+        }
+
+        const cleanUrl = url.trim();
+        if (!cleanUrl) {
+            throw new Error('PDF URL must be provided as a non-empty string');
+        }
+
+        await this.prepareSource({ url: cleanUrl });
+        await this.importSelectedPages();
+    },
+
+    async loadFromFile(file) {
+        const isBlobLike = file instanceof Blob;
+        if (!file || !isBlobLike) {
+            throw new Error('PDF file must be a valid Blob or File object');
+        }
+
+        await this.prepareSource({ url: '', file });
+        await this.importSelectedPages();
+    },
+
     async prepareSource({ url, file }) {
         const sourceKey = this.getSourceKey(url, file);
         const fromUrl = Boolean(url);
