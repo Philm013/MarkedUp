@@ -8,7 +8,6 @@ const App = {
         viewportPadding: 8,
         minDropdownHeight: 140
     },
-    trayToggleButtonIds: ['mobileDrawingTrigger', 'mobileToolsBtn'],
     escapeListenerBound: false,
 
     async init() {
@@ -111,9 +110,8 @@ const App = {
     },
 
     updateTrayToggleAccessibility(isOpen) {
-        this.trayToggleButtonIds.forEach((id) => {
-            const btn = document.getElementById(id);
-            if (btn) btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        document.querySelectorAll('[aria-controls="mobileActionTray"]').forEach((btn) => {
+            btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
         });
     },
 

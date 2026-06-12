@@ -2447,6 +2447,15 @@
                 scrollbar-width: thin;
             }
 
+            #mobHeaderMarkup::-webkit-scrollbar {
+                height: 4px;
+            }
+
+            #mobHeaderMarkup::-webkit-scrollbar-thumb {
+                background: var(--border);
+                border-radius: 999px;
+            }
+
             .mobile-tool-cluster {
                 display: inline-flex;
                 align-items: center;
