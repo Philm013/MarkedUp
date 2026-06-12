@@ -17,6 +17,7 @@ const App = {
         Editor.init();
         SettingsUI.init();
         Notes.init();
+        this.bindGlobalAccessibilityShortcuts();
         
         this.setupEventListeners();
         this.renderMobileEditorTools();
@@ -37,6 +38,16 @@ const App = {
                 reader.readAsDataURL(blob);
             }
         });
+    },
+
+    bindGlobalAccessibilityShortcuts() {
+        if (this.escapeListenerBound) return;
+        window.addEventListener('keydown', (e) => {
+            if (e.key !== 'Escape') return;
+            const tray = document.getElementById('mobileActionTray');
+            if (tray?.classList.contains('open')) this.closeTray();
+        });
+        this.escapeListenerBound = true;
     },
 
     renderMobileEditorTools() {
@@ -716,15 +727,6 @@ const App = {
                 this.resetDropdownMenuPosition(m);
             });
         };
-
-        if (!this.escapeListenerBound) {
-            window.addEventListener('keydown', (e) => {
-                if (e.key !== 'Escape') return;
-                const tray = document.getElementById('mobileActionTray');
-                if (tray?.classList.contains('open')) this.closeTray();
-            });
-            this.escapeListenerBound = true;
-        }
 
         if (!this.layoutListenersBound) {
             window.addEventListener('resize', () => {
