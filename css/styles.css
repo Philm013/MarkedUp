@@ -2115,6 +2115,11 @@
         .nav-item span { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
         .nav-item.active { color: var(--accent); }
         .nav-item[aria-current="page"] { color: var(--accent); }
+        .nav-item:hover,
+        .nav-item:active {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+        }
 
         /* Mobile UI Components (Aesthetics) */
         .floating-trigger {

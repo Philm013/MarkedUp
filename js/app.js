@@ -618,10 +618,14 @@ const App = {
         document.getElementById('layersBtn').onclick = layers;
 
         // Dialogs
-        document.getElementById('settingsBtn').onclick = () => { SettingsUI.loadToUI(); Modal.open('settingsModal'); };
+        const openSettings = () => {
+            SettingsUI.loadToUI();
+            Modal.open('settingsModal');
+        };
+        document.getElementById('settingsBtn').onclick = openSettings;
         const mobileSettingsBtn = document.getElementById('mobileSettingsBtn');
         if (mobileSettingsBtn) {
-            mobileSettingsBtn.onclick = () => document.getElementById('settingsBtn').click();
+            mobileSettingsBtn.onclick = openSettings;
         }
         document.getElementById('settingsCancelBtn').onclick = () => Modal.close('settingsModal');
         document.getElementById('settingsSaveBtn').onclick = () => SettingsUI.save();
