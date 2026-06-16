@@ -1,4 +1,11 @@
-const CACHE_NAME = 'markedup-v1';
+const CACHE_NAME = 'markedup-v2';
+const REMOTE_ASSET_CACHE = 'markedup-remote-assets-v1';
+const REMOTE_ASSET_HOSTS = new Set([
+  'api.iconify.design',
+  'picsum.photos',
+  'images.unsplash.com',
+  'images.pexels.com'
+]);
 
 const PRECACHE_URLS = [
   './index.html',
@@ -42,8 +49,32 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
-  // Only handle GET requests for same-origin or CDN assets
+  // Only handle GET requests
   if (event.request.method !== 'GET') return;
+  const requestUrl = new URL(event.request.url);
+
+  const shouldCacheRemoteAsset =
+    requestUrl.origin !== self.location.origin &&
+    REMOTE_ASSET_HOSTS.has(requestUrl.hostname);
+
+  if (shouldCacheRemoteAsset) {
+    event.respondWith(
+      caches.open(REMOTE_ASSET_CACHE).then(async cache => {
+        const cached = await cache.match(event.request);
+        const networkFetch = fetch(event.request)
+          .then(response => {
+            if (response.ok || response.type === 'opaque') {
+              cache.put(event.request, response.clone()).catch(() => {});
+            }
+            return response;
+          })
+          .catch(() => cached || new Response('', { status: 504, statusText: 'Gateway Timeout' }));
+
+        return cached || networkFetch;
+      })
+    );
+    return;
+  }
 
   event.respondWith(
     caches.match(event.request)
@@ -51,7 +82,7 @@ self.addEventListener('fetch', event => {
         if (cached) return cached;
         return fetch(event.request).then(response => {
           // Cache successful same-origin responses
-          if (response.ok && new URL(event.request.url).origin === self.location.origin) {
+          if (response.ok && requestUrl.origin === self.location.origin) {
             const clone = response.clone();
             caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone)).catch(() => {});
           }

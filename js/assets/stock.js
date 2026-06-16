@@ -6,6 +6,7 @@ const Stock = {
     provider: 'picsum',
     _renderedCount: 0,
     _stockObserver: null,
+    hasLoaded: false,
 
     init() {
         this.setupProviderSelector();
@@ -62,8 +63,17 @@ const Stock = {
         }
         
         this.loading = false;
+        this.hasLoaded = true;
         this.render();
         this.updateApiStatus();
+    },
+
+    ensureLoaded() {
+        if (!this.hasLoaded && !this.loading) {
+            this.load(true);
+            return;
+        }
+        this.render();
     },
     
     async loadFromUnsplash() {
@@ -266,4 +276,3 @@ const Stock = {
         }
     }
 };
-

@@ -170,7 +170,13 @@ const SettingsUI = {
 
         Icons.imageCache.clear();
         Icons.loadIcons();
-        Stock.load(true);
+        if (Stock.hasLoaded || Library.currentTab === 'stock') {
+            Stock.load(true);
+        } else {
+            Stock.images = [];
+            Stock._renderedCount = 0;
+            Stock.hasLoaded = false;
+        }
         
         App.applyToolbarPosition();
         

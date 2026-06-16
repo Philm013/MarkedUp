@@ -21,7 +21,6 @@ const Library = {
         if (typeof Emojis !== 'undefined') Emojis.init();
         if (typeof Stock !== 'undefined') {
             Stock.init();
-            Stock.load(true);
         }
         
         this.render();
@@ -484,9 +483,12 @@ const Library = {
         const stock = document.getElementById('stockProviders');
         if (stock) stock.style.display = tab === 'stock' ? 'flex' : 'none';
         
-        if (tab === 'icons' && typeof Icons !== 'undefined') Icons.render();
+        if (tab === 'icons' && typeof Icons !== 'undefined') {
+            Icons.ensureDefaultLoaded();
+            if (!Icons.loading) Icons.render();
+        }
         if (tab === 'emojis' && typeof Emojis !== 'undefined') Emojis.render();
-        if (tab === 'stock' && typeof Stock !== 'undefined') Stock.render();
+        if (tab === 'stock' && typeof Stock !== 'undefined') Stock.ensureLoaded();
         if (tab === 'favorites') this.renderFavorites();
         
         if (typeof Icons !== 'undefined') Icons.updateApiStatus();

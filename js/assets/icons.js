@@ -1,4 +1,7 @@
 const Icons = {
+    ICONIFY_SEARCH_LIMIT: 48,
+    ICONIFY_DEFAULT_LIMIT: 72,
+    ICON_LAZY_LOAD_MARGIN: '180px',
     builtinIcons: [
         { name: 'check', svg: '<polyline points="20 6 9 17 4 12"/>' },
         { name: 'x', svg: '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>' },
@@ -63,7 +66,12 @@ const Icons = {
     loading: false,
     provider: 'builtin',
     imageCache: new Map(),
+    iconListCache: new Map(),
     _iconObserver: null,
+    _requestController: null,
+    _requestSeq: 0,
+    _activeSearchKey: '',
+    _defaultIconifyLoaded: false,
 
     init() {
         this.loadIcons();
@@ -72,10 +80,13 @@ const Icons = {
     async loadIcons() {
         this.loading = true;
         this.showLoading();
+        this._activeSearchKey = '';
+        this._defaultIconifyLoaded = false;
         
         if (Settings.get('iconifyEnabled')) {
             this.provider = 'iconify';
-            await this.loadFromIconify();
+            await this.loadFromIconify('');
+            this._defaultIconifyLoaded = true;
         } else if (Settings.get('builtinIcons')) {
             this.provider = 'builtin';
             this.icons = [...this.builtinIcons];
@@ -86,32 +97,55 @@ const Icons = {
         this.render();
         this.updateApiStatus();
     },
+
+    getIconifyCacheKey(query = '') {
+        const prefix = (Settings.get('iconifySet') || '').trim().toLowerCase();
+        const normalizedQuery = String(query || '').trim().toLowerCase();
+        return JSON.stringify([prefix, normalizedQuery || '__default__']);
+    },
     
     async loadFromIconify(query = '') {
+        const normalizedQuery = String(query || '').trim();
+        const cacheKey = this.getIconifyCacheKey(normalizedQuery);
+        const cached = this.iconListCache.get(cacheKey);
+        if (cached) {
+            this.icons = cached.map(icon => ({ ...icon }));
+            return;
+        }
+
+        if (this._requestController) this._requestController.abort();
+        const controller = new AbortController();
+        this._requestController = controller;
+        const requestSeq = ++this._requestSeq;
+
         try {
             const prefix = Settings.get('iconifySet') || '';
             let url;
             
-            if (query) {
-                url = `https://api.iconify.design/search?query=${encodeURIComponent(query)}&limit=60`;
+            if (normalizedQuery) {
+                url = `https://api.iconify.design/search?query=${encodeURIComponent(normalizedQuery)}&limit=${this.ICONIFY_SEARCH_LIMIT}`;
                 if (prefix) url += `&prefix=${prefix}`;
             } else {
                 const set = prefix || 'mdi';
                 url = `https://api.iconify.design/collection?prefix=${set}`;
             }
+            const endpointType = normalizedQuery ? 'search' : 'collection';
             
-            const response = await fetch(url);
+            const response = await fetch(url, { signal: controller.signal });
+            const queryContext = normalizedQuery || (prefix || 'mdi');
+            if (!response.ok) throw new Error(`Iconify ${endpointType} request failed for "${queryContext}": ${response.status}`);
             const data = await response.json();
+            if (requestSeq !== this._requestSeq) return;
             
-            if (query) {
-                this.icons = data.icons ? data.icons.map(icon => ({
+            if (normalizedQuery) {
+                this.icons = data.icons ? data.icons.slice(0, this.ICONIFY_SEARCH_LIMIT).map(icon => ({
                     name: icon.split(':')[1] || icon,
                     prefix: icon.split(':')[0],
                     fullName: icon,
                     type: 'iconify'
                 })) : [];
             } else {
-                const iconNames = data.uncategorized || Object.values(data.categories || {}).flat().slice(0, 100);
+                const iconNames = data.uncategorized || Object.values(data.categories || {}).flat().slice(0, this.ICONIFY_DEFAULT_LIMIT);
                 this.icons = iconNames.map(name => ({
                     name: name,
                     prefix: prefix || 'mdi',
@@ -119,10 +153,14 @@ const Icons = {
                     type: 'iconify'
                 }));
             }
+            this.iconListCache.set(cacheKey, this.icons.map(icon => ({ ...icon })));
         } catch (e) {
+            if (e.name === 'AbortError') return;
             console.error('Iconify API error:', e);
             this.icons = [...this.builtinIcons];
             this.provider = 'builtin';
+        } finally {
+            if (this._requestController === controller) this._requestController = null;
         }
     },
     
@@ -175,24 +213,53 @@ const Icons = {
     },
 
     search(query) {
-        if (Settings.get('iconifyEnabled') && query.length >= 2) {
-            this.loadFromIconify(query).then(() => {
+        if (Settings.get('iconifyEnabled')) {
+            const normalized = String(query || '').trim();
+            const loadQuery = normalized.length >= 2 ? normalized : '';
+            const searchKey = this.getIconifyCacheKey(loadQuery);
+            if (searchKey === this._activeSearchKey && this.filtered.length) return;
+            this._activeSearchKey = searchKey;
+
+            this.loading = true;
+            this.showLoading();
+            this.loadFromIconify(loadQuery).then(() => {
+                if (searchKey !== this._activeSearchKey) return;
+                this.loading = false;
                 this.filtered = [...this.icons];
+                this._defaultIconifyLoaded = !loadQuery;
                 this.render();
+                this.updateApiStatus();
             });
-        } else {
-            if (!query) {
-                this.filtered = [...this.icons];
-            } else {
-                const q = query.toLowerCase();
-                this.filtered = this.icons.filter(i => i.name.toLowerCase().includes(q));
-            }
-            this.render();
+            return;
         }
+
+        if (!query) {
+            this.filtered = [...this.icons];
+        } else {
+            const q = query.toLowerCase();
+            this.filtered = this.icons.filter(i => i.name.toLowerCase().includes(q));
+        }
+        this.render();
+    },
+
+    ensureDefaultLoaded() {
+        if (!Settings.get('iconifyEnabled') || this.provider !== 'iconify') return;
+        if (this._defaultIconifyLoaded || this.loading) return;
+        this._activeSearchKey = this.getIconifyCacheKey('');
+        this.loading = true;
+        this.showLoading();
+        this.loadFromIconify('').then(() => {
+            this.loading = false;
+            this._defaultIconifyLoaded = true;
+            this.filtered = [...this.icons];
+            this.render();
+            this.updateApiStatus();
+        });
     },
 
     render() {
         const grid = document.getElementById('iconsGrid');
+        if (!grid) return;
         grid.innerHTML = '';
 
         // Disconnect any previous lazy-load observer
@@ -221,9 +288,10 @@ const Icons = {
                         this._iconObserver.unobserve(img);
                     }
                 });
-            }, { rootMargin: '120px' });
+            }, { root: grid, rootMargin: this.ICON_LAZY_LOAD_MARGIN });
         }
-        
+
+        const fragment = document.createDocumentFragment();
         this.filtered.forEach(icon => {
             const el = document.createElement('div');
             el.className = 'icon-item' + (this.selected === icon.name ? ' selected' : '');
@@ -233,7 +301,7 @@ const Icons = {
                 // element scrolls near the viewport.  A transparent placeholder
                 // keeps layout stable and avoids broken-image icons.
                 el.innerHTML = `
-                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'/%3E" data-src="https://api.iconify.design/${icon.fullName}.svg?color=%23fafafa" alt="${icon.name}" width="24" height="24">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'/%3E" data-src="https://api.iconify.design/${icon.fullName}.svg?color=%23fafafa" alt="" width="24" height="24" decoding="async" fetchpriority="low">
                     <span>${icon.name}</span>
                 `;
                 if (this._iconObserver) this._iconObserver.observe(el.querySelector('img'));
@@ -251,10 +319,11 @@ const Icons = {
             el.appendChild(star);
 
             el.addEventListener('click', () => this.select(icon));
-            grid.appendChild(el);
+            fragment.appendChild(el);
         });
+        grid.appendChild(fragment);
 
-        if (this.provider === 'iconify' && this.filtered.length >= 60) {
+        if (this.provider === 'iconify' && this.filtered.length >= this.ICONIFY_SEARCH_LIMIT) {
             const more = document.createElement('button');
             more.className = 'btn btn-default btn-sm';
             more.style.gridColumn = '1/-1';
@@ -295,4 +364,3 @@ const Icons = {
         this.render();
     }
 };
-
