@@ -1,4 +1,7 @@
 const Icons = {
+    ICONIFY_SEARCH_LIMIT: 48,
+    ICONIFY_DEFAULT_LIMIT: 72,
+    ICON_LAZY_LOAD_MARGIN: '180px',
     builtinIcons: [
         { name: 'check', svg: '<polyline points="20 6 9 17 4 12"/>' },
         { name: 'x', svg: '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>' },
@@ -98,7 +101,7 @@ const Icons = {
     getIconifyCacheKey(query = '') {
         const prefix = (Settings.get('iconifySet') || '').trim().toLowerCase();
         const normalizedQuery = String(query || '').trim().toLowerCase();
-        return `${prefix}::${normalizedQuery || '__default__'}`;
+        return JSON.stringify([prefix, normalizedQuery || '__default__']);
     },
     
     async loadFromIconify(query = '') {
@@ -120,27 +123,29 @@ const Icons = {
             let url;
             
             if (normalizedQuery) {
-                url = `https://api.iconify.design/search?query=${encodeURIComponent(normalizedQuery)}&limit=48`;
+                url = `https://api.iconify.design/search?query=${encodeURIComponent(normalizedQuery)}&limit=${this.ICONIFY_SEARCH_LIMIT}`;
                 if (prefix) url += `&prefix=${prefix}`;
             } else {
                 const set = prefix || 'mdi';
                 url = `https://api.iconify.design/collection?prefix=${set}`;
             }
+            const endpointType = normalizedQuery ? 'search' : 'collection';
             
             const response = await fetch(url, { signal: controller.signal });
-            if (!response.ok) throw new Error(`Iconify request failed: ${response.status}`);
+            const queryContext = normalizedQuery || (prefix || 'mdi');
+            if (!response.ok) throw new Error(`Iconify ${endpointType} request failed for "${queryContext}": ${response.status}`);
             const data = await response.json();
             if (requestSeq !== this._requestSeq) return;
             
             if (normalizedQuery) {
-                this.icons = data.icons ? data.icons.slice(0, 48).map(icon => ({
+                this.icons = data.icons ? data.icons.slice(0, this.ICONIFY_SEARCH_LIMIT).map(icon => ({
                     name: icon.split(':')[1] || icon,
                     prefix: icon.split(':')[0],
                     fullName: icon,
                     type: 'iconify'
                 })) : [];
             } else {
-                const iconNames = data.uncategorized || Object.values(data.categories || {}).flat().slice(0, 72);
+                const iconNames = data.uncategorized || Object.values(data.categories || {}).flat().slice(0, this.ICONIFY_DEFAULT_LIMIT);
                 this.icons = iconNames.map(name => ({
                     name: name,
                     prefix: prefix || 'mdi',
@@ -283,7 +288,7 @@ const Icons = {
                         this._iconObserver.unobserve(img);
                     }
                 });
-            }, { root: grid, rootMargin: '180px' });
+            }, { root: grid, rootMargin: this.ICON_LAZY_LOAD_MARGIN });
         }
 
         const fragment = document.createDocumentFragment();
@@ -296,7 +301,7 @@ const Icons = {
                 // element scrolls near the viewport.  A transparent placeholder
                 // keeps layout stable and avoids broken-image icons.
                 el.innerHTML = `
-                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'/%3E" data-src="https://api.iconify.design/${icon.fullName}.svg?color=%23fafafa" alt="${icon.name}" width="24" height="24" loading="lazy" decoding="async" fetchpriority="low">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'/%3E" data-src="https://api.iconify.design/${icon.fullName}.svg?color=%23fafafa" alt="" width="24" height="24" decoding="async" fetchpriority="low">
                     <span>${icon.name}</span>
                 `;
                 if (this._iconObserver) this._iconObserver.observe(el.querySelector('img'));
@@ -318,7 +323,7 @@ const Icons = {
         });
         grid.appendChild(fragment);
 
-        if (this.provider === 'iconify' && this.filtered.length >= 60) {
+        if (this.provider === 'iconify' && this.filtered.length >= this.ICONIFY_SEARCH_LIMIT) {
             const more = document.createElement('button');
             more.className = 'btn btn-default btn-sm';
             more.style.gridColumn = '1/-1';

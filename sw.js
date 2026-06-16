@@ -1,5 +1,11 @@
 const CACHE_NAME = 'markedup-v2';
 const REMOTE_ASSET_CACHE = 'markedup-remote-assets-v1';
+const REMOTE_ASSET_HOSTS = new Set([
+  'api.iconify.design',
+  'picsum.photos',
+  'images.unsplash.com',
+  'images.pexels.com'
+]);
 
 const PRECACHE_URLS = [
   './index.html',
@@ -47,16 +53,9 @@ self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
   const requestUrl = new URL(event.request.url);
 
-  const remoteAssetHosts = new Set([
-    'api.iconify.design',
-    'picsum.photos',
-    'images.unsplash.com',
-    'images.pexels.com'
-  ]);
-
   const shouldCacheRemoteAsset =
     requestUrl.origin !== self.location.origin &&
-    (remoteAssetHosts.has(requestUrl.hostname) || event.request.destination === 'image');
+    REMOTE_ASSET_HOSTS.has(requestUrl.hostname);
 
   if (shouldCacheRemoteAsset) {
     event.respondWith(
@@ -64,12 +63,12 @@ self.addEventListener('fetch', event => {
         const cached = await cache.match(event.request);
         const networkFetch = fetch(event.request)
           .then(response => {
-            if (response && (response.ok || response.type === 'opaque')) {
+            if (response.ok || response.type === 'opaque') {
               cache.put(event.request, response.clone()).catch(() => {});
             }
             return response;
           })
-          .catch(() => cached);
+          .catch(() => cached || new Response('', { status: 504, statusText: 'Gateway Timeout' }));
 
         return cached || networkFetch;
       })
