@@ -4,6 +4,8 @@ const Stock = {
     loading: false,
     query: '',
     provider: 'picsum',
+    _renderedCount: 0,
+    _stockObserver: null,
 
     init() {
         this.setupProviderSelector();
@@ -39,6 +41,13 @@ const Stock = {
         if (reset) {
             this.page = 1;
             this.images = [];
+            this._renderedCount = 0;
+            if (this._stockObserver) {
+                this._stockObserver.disconnect();
+                this._stockObserver = null;
+            }
+            const grid = document.getElementById('stockGrid');
+            if (grid) grid.innerHTML = '';
         }
         
         this.loading = true;
@@ -164,18 +173,23 @@ const Stock = {
 
     render() {
         const grid = document.getElementById('stockGrid');
-        grid.innerHTML = '';
+
+        // Remove existing scroll sentinel and load-more controls before appending
+        grid.querySelector('.stock-sentinel')?.remove();
+        grid.querySelector('.stock-load-more')?.remove();
         
         if (this.images.length === 0) {
             grid.innerHTML = '<div class="no-results" style="grid-column:1/-1;">No images found</div>';
             return;
         }
-        
-        this.images.forEach(img => {
+
+        // Only append images that haven't been rendered yet
+        const newImages = this.images.slice(this._renderedCount);
+        newImages.forEach(img => {
             const el = document.createElement('div');
             el.className = 'image-item';
             el.innerHTML = `
-                <img src="${img.thumb}" alt="${img.alt}" crossorigin="anonymous" onerror="this.parentElement.style.display='none'">
+                <img src="${img.thumb}" alt="${img.alt}" crossorigin="anonymous" loading="lazy" decoding="async" onerror="this.parentElement.style.display='none'">
                 <div class="image-overlay">${img.author}</div>
             `;
 
@@ -188,29 +202,32 @@ const Stock = {
             el.addEventListener('click', () => this.addToCanvas(img));
             grid.appendChild(el);
         });
+        this._renderedCount = this.images.length;
         
+        // Sentinel element observed for infinite scroll
         const trigger = document.createElement('div');
-        trigger.className = 'loading-spinner';
+        trigger.className = 'loading-spinner stock-sentinel';
         trigger.style.gridColumn = '1/-1';
         trigger.innerHTML = '<div class="spinner"></div>';
         grid.appendChild(trigger);
         
-        // Add manual load more button for better UX
+        // Manual load-more as fallback
         const moreBtn = document.createElement('button');
-        moreBtn.className = 'btn btn-default btn-sm';
+        moreBtn.className = 'btn btn-default btn-sm stock-load-more';
         moreBtn.style.gridColumn = '1/-1';
         moreBtn.style.margin = '10px 0';
         moreBtn.textContent = 'Load More Images';
         moreBtn.onclick = () => this.load();
         grid.appendChild(moreBtn);
         
-        const observer = new IntersectionObserver(entries => {
+        if (this._stockObserver) this._stockObserver.disconnect();
+        this._stockObserver = new IntersectionObserver(entries => {
             if (entries[0].isIntersecting && !this.loading) {
-                observer.disconnect();
+                this._stockObserver.disconnect();
                 this.load();
             }
         });
-        observer.observe(trigger);
+        this._stockObserver.observe(trigger);
     },
 
     async addToCanvas(img) {

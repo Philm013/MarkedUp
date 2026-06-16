@@ -63,6 +63,7 @@ const Icons = {
     loading: false,
     provider: 'builtin',
     imageCache: new Map(),
+    _iconObserver: null,
 
     init() {
         this.loadIcons();
@@ -193,10 +194,34 @@ const Icons = {
     render() {
         const grid = document.getElementById('iconsGrid');
         grid.innerHTML = '';
+
+        // Disconnect any previous lazy-load observer
+        if (this._iconObserver) {
+            this._iconObserver.disconnect();
+            this._iconObserver = null;
+        }
         
         if (this.filtered.length === 0) {
             grid.innerHTML = '<div class="no-results" style="grid-column:span 5;">No icons found</div>';
             return;
+        }
+
+        // Set up IntersectionObserver to lazy-load Iconify SVG requests
+        const hasIconify = this.filtered.some(i => i.type === 'iconify');
+        if (hasIconify) {
+            this._iconObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const img = entry.target;
+                        const deferred = img.dataset.src;
+                        if (deferred) {
+                            img.src = deferred;
+                            delete img.dataset.src;
+                        }
+                        this._iconObserver.unobserve(img);
+                    }
+                });
+            }, { rootMargin: '120px' });
         }
         
         this.filtered.forEach(icon => {
@@ -204,10 +229,13 @@ const Icons = {
             el.className = 'icon-item' + (this.selected === icon.name ? ' selected' : '');
             
             if (icon.type === 'iconify') {
+                // Use data-src so the network request is deferred until the
+                // element scrolls near the viewport.
                 el.innerHTML = `
-                    <img src="https://api.iconify.design/${icon.fullName}.svg?color=%23fafafa" alt="${icon.name}">
+                    <img data-src="https://api.iconify.design/${icon.fullName}.svg?color=%23fafafa" alt="${icon.name}" width="24" height="24">
                     <span>${icon.name}</span>
                 `;
+                this._iconObserver.observe(el.querySelector('img'));
             } else {
                 el.innerHTML = `
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${icon.svg}</svg>
