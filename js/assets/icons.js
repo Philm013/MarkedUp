@@ -230,12 +230,13 @@ const Icons = {
             
             if (icon.type === 'iconify') {
                 // Use data-src so the network request is deferred until the
-                // element scrolls near the viewport.
+                // element scrolls near the viewport.  A transparent placeholder
+                // keeps layout stable and avoids broken-image icons.
                 el.innerHTML = `
-                    <img data-src="https://api.iconify.design/${icon.fullName}.svg?color=%23fafafa" alt="${icon.name}" width="24" height="24">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'/%3E" data-src="https://api.iconify.design/${icon.fullName}.svg?color=%23fafafa" alt="${icon.name}" width="24" height="24">
                     <span>${icon.name}</span>
                 `;
-                this._iconObserver.observe(el.querySelector('img'));
+                if (this._iconObserver) this._iconObserver.observe(el.querySelector('img'));
             } else {
                 el.innerHTML = `
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${icon.svg}</svg>

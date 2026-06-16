@@ -180,6 +180,7 @@ const Stock = {
         
         if (this.images.length === 0) {
             grid.innerHTML = '<div class="no-results" style="grid-column:1/-1;">No images found</div>';
+            this._renderedCount = 0;
             return;
         }
 
